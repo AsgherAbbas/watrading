@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="WA Trading">
+<meta name="theme-color" content="#080c10">
+<title>WA Trading Platform</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080c10;--surface:#0d1218;--surface2:#111820;--border:#1e2a36;
+  --accent:#00e5a0;--buy:#00aaff;--sell:#00e5a0;--warn:#ff6b35;
+  --new:#a78bfa;--used:#fbbf24;--hot:#ff4757;--danger:#ff4757;
+  --text:#e8f0f8;--muted:#4a6070;
+  --mono:'Space Mono',monospace;--display:'Syne',sans-serif;
+  --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:var(--display);display:flex;flex-direction:column}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,160,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,160,.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+
+/* AUTH SCREEN */
+#authScreen{position:fixed;inset:0;z-index:600;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+.auth-card{width:100%;max-width:400px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:32px 24px}
+.auth-logo{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.auth-icon{width:40px;height:40px;background:var(--accent);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.auth-logo h1{font-size:20px;font-weight:800}.auth-logo h1 span{color:var(--accent)}
+.auth-sub{color:var(--muted);font-size:12px;margin-bottom:24px;line-height:1.5}
+.auth-tabs{display:flex;gap:0;margin-bottom:20px;background:var(--surface2);border-radius:8px;padding:3px}
+.auth-tab{flex:1;padding:8px;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);border:none;background:transparent;cursor:pointer;border-radius:6px;transition:all .2s}
+.auth-tab.active{background:var(--accent);color:var(--bg);font-weight:700}
+.fi{margin-bottom:12px}
+.fi label{display:block;font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.fi input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;-webkit-appearance:none;transition:border-color .2s}
+.fi input:focus{border-color:var(--accent)}.fi input::placeholder{color:var(--muted)}
+.btn-p{width:100%;padding:13px;background:var(--accent);color:var(--bg);border:none;border-radius:10px;font-family:var(--display);font-weight:800;font-size:14px;cursor:pointer;margin-top:4px}
+.btn-d{width:100%;padding:11px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:10px;font-family:var(--display);font-weight:600;font-size:13px;cursor:pointer;margin-top:8px}
+.auth-err{color:var(--danger);font-family:var(--mono);font-size:11px;margin-top:8px;text-align:center}
+
+/* HEADER */
+header{padding-top:var(--st);background:rgba(8,12,16,.97);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);z-index:100;flex-shrink:0}
+.h-inner{display:flex;align-items:center;justify-content:space-between;padding:9px 14px}
+.logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:13px}
+.li{width:24px;height:24px;border-radius:7px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px}
+.logo span{color:var(--accent)}
+.h-right{display:flex;align-items:center;gap:8px}
+.ldot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.pill{font-family:var(--mono);font-size:8px;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:20px;border:1px solid}
+.pill.on{color:var(--accent);border-color:var(--accent);background:rgba(0,229,160,.08)}
+.pill.off{color:var(--warn);border-color:var(--warn);background:rgba(255,107,53,.08)}
+.pill.demo{color:var(--buy);border-color:var(--buy);background:rgba(0,170,255,.08)}
+.user-badge{font-family:var(--mono);font-size:9px;color:var(--muted);cursor:pointer}
+
+/* TABS */
+.tabs{display:flex;border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-shrink:0}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;padding:8px 10px;font-family:var(--mono);font-size:8px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);border:none;background:transparent;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:var(--sb);-webkit-overflow-scrolling:touch;position:relative;z-index:1}
+.pane{display:none}.pane.active{display:block}
+
+/* SHARED COMPONENTS */
+.sec{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin:0 12px 12px;overflow:hidden}
+.sec-h{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.sec-t{font-size:11px;font-weight:700;display:flex;align-items:center;gap:6px}
+.sec-t .dot{width:5px;height:5px;border-radius:50%;background:var(--accent)}
+.sec-c{font-family:var(--mono);font-size:9px;color:var(--muted)}
+.empty{padding:32px 20px;text-align:center;color:var(--muted);font-size:11px;font-family:var(--mono)}
+.empty-icon{font-size:28px;display:block;margin-bottom:8px;opacity:.3}
+.pbody{padding:12px;display:flex;flex-direction:column;gap:12px}
+
+/* KPI */
+.kgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kpi.g::before{background:var(--sell)}.kpi.b::before{background:var(--buy)}
+.kpi.o::before{background:var(--warn)}.kpi.p::before{background:var(--new)}
+.kpi.y::before{background:var(--used)}.kpi.r::before{background:var(--hot)}
+.kl{font-family:var(--mono);font-size:8px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.kv{font-size:20px;font-weight:800;line-height:1}
+.kpi.g .kv{color:var(--sell)}.kpi.b .kv{color:var(--buy)}.kpi.o .kv{color:var(--warn)}.kpi.p .kv{color:var(--new)}.kpi.y .kv{color:var(--used)}.kpi.r .kv{color:var(--hot)}
+.ksub{font-family:var(--mono);font-size:8px;color:var(--muted);margin-top:3px}
+
+/* BARS */
+.bars{padding:10px 14px;display:flex;flex-direction:column;gap:9px}
+.br{display:flex;align-items:center;gap:8px}
+.bl{font-family:var(--mono);font-size:9px;color:var(--muted);width:90px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bt{flex:1;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden}
+.bf{height:100%;border-radius:2px;transition:width .6s}
+.bn{font-family:var(--mono);font-size:9px;color:var(--muted);width:22px;text-align:right;flex-shrink:0}
+
+/* DONUT */
+.donut-row{display:flex;align-items:center;gap:14px;padding:14px}
+.leg{display:flex;flex-direction:column;gap:7px}
+.li2{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10px;color:var(--muted)}
+.ldot2{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.lv{color:var(--text);font-weight:700;margin-left:auto;padding-left:10px}
+
+/* FEED */
+.filters{display:flex;gap:5px;padding:8px 12px;overflow-x:auto;border-bottom:1px solid var(--border);-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.filters::-webkit-scrollbar{display:none}
+.chip{font-family:var(--mono);font-size:8px;letter-spacing:.8px;text-transform:uppercase;padding:4px 9px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0}
+.chip.active{color:var(--accent);border-color:var(--accent);background:rgba(0,229,160,.08)}
+.chip.b.active{color:var(--buy);border-color:var(--buy);background:rgba(0,170,255,.08)}
+.chip.r.active{color:var(--hot);border-color:var(--hot);background:rgba(255,71,87,.08)}
+.sw{padding:8px 12px;border-bottom:1px solid var(--border)}
+.si{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:11px;outline:none;-webkit-appearance:none}
+.si:focus{border-color:var(--accent)}.si::placeholder{color:var(--muted)}
+
+/* LISTING CARD */
+.listing{padding:11px 12px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:6px;animation:fi .2s ease;position:relative}
+@keyframes fi{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}
+.score-badge{position:absolute;top:9px;right:10px;font-family:var(--mono);font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px}
+.score-high{background:rgba(0,229,160,.15);color:var(--sell);border:1px solid var(--sell)}
+.score-mid{background:rgba(251,191,36,.1);color:var(--used);border:1px solid var(--used)}
+.score-low{background:rgba(255,107,53,.1);color:var(--warn);border:1px solid var(--warn)}
+.flag-banner{background:rgba(255,71,87,.1);border:1px solid var(--hot);border-radius:6px;padding:5px 9px;font-family:var(--mono);font-size:9px;color:var(--hot)}
+.l-top{display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding-right:60px}
+.tag{font-family:var(--mono);font-size:7px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:2px 6px;border-radius:3px;border:1px solid;flex-shrink:0}
+.tag.wts{color:var(--sell);border-color:var(--sell);background:rgba(0,229,160,.08)}
+.tag.wtb{color:var(--buy);border-color:var(--buy);background:rgba(0,170,255,.08)}
+.tag.new{color:var(--new);border-color:var(--new);background:rgba(167,139,250,.08)}
+.tag.used{color:var(--used);border-color:var(--used);background:rgba(251,191,36,.08)}
+.tag.grade{color:var(--used);border-color:var(--used);background:rgba(251,191,36,.1)}
+.l-model{font-size:13px;font-weight:800;flex:1;min-width:0}
+.l-price{font-family:var(--mono);font-size:12px;color:var(--accent);font-weight:700;white-space:nowrap}
+.specs{display:flex;flex-wrap:wrap;gap:4px}
+.sc{font-family:var(--mono);font-size:8px;padding:2px 6px;border-radius:3px;background:var(--surface2);border:1px solid var(--border);color:var(--muted)}
+.l-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-family:var(--mono);font-size:9px;color:var(--muted)}
+.l-raw{font-size:10px;color:var(--muted);font-family:var(--mono);border-left:2px solid var(--border);padding-left:8px;line-height:1.5}
+.contact-row{display:flex;gap:6px}
+.btn-wa{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;padding:7px;border-radius:7px;border:none;background:rgba(0,229,160,.1);color:var(--accent);font-family:var(--display);font-size:10px;font-weight:700;cursor:pointer;text-decoration:none}
+.btn-call{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;padding:7px;border-radius:7px;border:none;background:rgba(0,170,255,.1);color:var(--buy);font-family:var(--display);font-size:10px;font-weight:700;cursor:pointer;text-decoration:none}
+.btn-reply{flex:2;display:flex;align-items:center;justify-content:center;gap:4px;padding:7px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:var(--display);font-size:10px;font-weight:700;cursor:pointer}
+
+/* PIPELINE */
+.pipeline-row{display:flex;gap:5px;flex-wrap:wrap}
+.pip-btn{font-family:var(--mono);font-size:8px;padding:4px 8px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s}
+.pip-btn.new-s{color:var(--text);border-color:var(--text)}
+.pip-btn.contacted{color:var(--buy);border-color:var(--buy);background:rgba(0,170,255,.08)}
+.pip-btn.negotiating{color:var(--used);border-color:var(--used);background:rgba(251,191,36,.08)}
+.pip-btn.done{color:var(--sell);border-color:var(--sell);background:rgba(0,229,160,.08)}
+.pip-btn.pass{color:var(--warn);border-color:var(--warn);background:rgba(255,107,53,.08)}
+.assign-row{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px}
+.assign-select{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:3px 7px;color:var(--text);font-family:var(--mono);font-size:9px;outline:none}
+
+/* MARKET TAB */
+.demand-row{display:flex;align-items:center;gap:8px;padding:9px 14px;border-bottom:1px solid var(--border)}
+.demand-row:last-child{border-bottom:none}
+.demand-model{flex:1;font-size:11px;font-weight:700}
+.d-bars{display:flex;flex-direction:column;gap:3px;width:100px}
+.dbar{display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:8px}
+.dbar-t{width:50px;height:3px;background:var(--surface2);border-radius:2px;overflow:hidden}
+.dbar-f{height:100%;border-radius:2px}
+.ratio-hot{color:var(--hot);background:rgba(255,71,87,.1);border:1px solid var(--hot);font-family:var(--mono);font-size:8px;padding:2px 6px;border-radius:4px;font-weight:700}
+.ratio-ok{color:var(--sell);background:rgba(0,229,160,.1);border:1px solid var(--sell);font-family:var(--mono);font-size:8px;padding:2px 6px;border-radius:4px;font-weight:700}
+.ratio-over{color:var(--muted);background:var(--surface2);border:1px solid var(--border);font-family:var(--mono);font-size:8px;padding:2px 6px;border-radius:4px}
+.price-item{padding:10px 14px;border-bottom:1px solid var(--border)}
+.price-item:last-child{border-bottom:none}
+.price-model{font-size:11px;font-weight:700;margin-bottom:5px}
+.price-stats{display:flex;gap:12px;flex-wrap:wrap}
+.pstat-l{font-family:var(--mono);font-size:8px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.pstat-v{font-family:var(--mono);font-size:11px;font-weight:700;margin-top:2px}
+
+/* AI TAB */
+.ai-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.ai-card-h{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.ai-card-t{font-size:11px;font-weight:700;display:flex;align-items:center;gap:6px}
+.ai-btn{padding:7px 12px;background:var(--accent);color:var(--bg);border:none;border-radius:7px;font-family:var(--display);font-weight:800;font-size:10px;cursor:pointer;white-space:nowrap}
+.ai-btn.blue{background:var(--buy)}.ai-btn.purple{background:var(--new)}.ai-btn.orange{background:var(--warn)}
+.ai-output{padding:12px 14px;font-size:11px;line-height:1.8;color:var(--text);min-height:70px;white-space:pre-wrap;font-family:var(--mono)}
+.ai-output.muted{color:var(--muted);font-style:italic}
+.ai-input-row{display:flex;gap:7px;padding:10px 14px;border-top:1px solid var(--border)}
+
+/* MARGIN CALC */
+.calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 14px}
+.calc-field label{font-family:var(--mono);font-size:8px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px}
+.calc-field input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:8px 10px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none;-webkit-appearance:none}
+.calc-field input:focus{border-color:var(--accent)}
+.calc-result{margin:0 14px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cres-item label{font-family:var(--mono);font-size:8px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:3px}
+.cres-val{font-family:var(--mono);font-size:14px;font-weight:700}
+
+/* ALERTS */
+.alert-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border)}
+.alert-item:last-child{border-bottom:none}
+.alert-info{flex:1}
+.alert-model{font-size:12px;font-weight:700}
+.alert-target{font-family:var(--mono);font-size:10px;color:var(--accent);margin-top:2px}
+
+/* TEAM */
+.team-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border)}
+.team-row:last-child{border-bottom:none}
+.team-av{width:30px;height:30px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--accent);flex-shrink:0}
+.team-info{flex:1}
+.team-name{font-size:12px;font-weight:700}
+.team-email{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:1px}
+.team-role{font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:4px;border:1px solid}
+.team-role.admin{color:var(--accent);border-color:var(--accent)}
+.team-role.member{color:var(--muted);border-color:var(--border)}
+
+/* TRADERS */
+.tr-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border)}
+.tr-rank{font-family:var(--mono);font-size:9px;color:var(--muted);width:16px;text-align:center}
+.tr-av{width:28px;height:28px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--accent);flex-shrink:0}
+.tr-info{flex:1;min-width:0}
+.tr-name{font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tr-country{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:1px}
+.tr-stats{display:flex;gap:5px;flex-shrink:0}
+.ts{font-family:var(--mono);font-size:9px}
+
+/* CHANNELS & GROUPS */
+.ch-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:12px}
+.ch-header{padding:11px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.ch-icon{width:32px;height:32px;border-radius:8px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.ch-info{flex:1;min-width:0}
+.ch-label{font-size:12px;font-weight:700}
+.ch-token{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ch-actions{display:flex;gap:6px;flex-shrink:0}
+.ch-btn{font-family:var(--mono);font-size:8px;padding:4px 9px;border-radius:5px;border:1px solid;cursor:pointer;background:transparent;white-space:nowrap}
+.ch-btn.primary{color:var(--accent);border-color:var(--accent)}
+.ch-btn.danger{color:var(--danger);border-color:var(--danger)}
+.ch-btn.muted{color:var(--muted);border-color:var(--border)}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid var(--border)}
+.toggle-row:last-child{border-bottom:none}
+.toggle-info{flex:1;min-width:0}
+.toggle-name{font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.toggle-meta{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:1px}
+.toggle{position:relative;width:36px;height:20px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:var(--surface2);border:1px solid var(--border);border-radius:20px;cursor:pointer;transition:.2s}
+.toggle-slider:before{content:'';position:absolute;height:14px;width:14px;left:2px;bottom:2px;background:var(--muted);border-radius:50%;transition:.2s}
+.toggle input:checked+.toggle-slider{background:rgba(0,229,160,.15);border-color:var(--accent)}
+.toggle input:checked+.toggle-slider:before{transform:translateX(16px);background:var(--accent)}
+.add-channel-form{padding:12px 14px;display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--border)}
+.webhook-info{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.7}
+.webhook-info b{color:var(--accent)}
+
+/* EXPORT */
+.exp-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.exp-card-h{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.exp-rows{max-height:220px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.exp-row{display:flex;align-items:flex-start;gap:8px;padding:9px 14px;border-bottom:1px solid var(--border)}
+.exp-row:last-child{border-bottom:none}
+.exp-av{width:24px;height:24px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--accent);flex-shrink:0;margin-top:1px}
+.exp-info{flex:1;min-width:0}
+.exp-name{font-size:11px;font-weight:700}
+.exp-phone{font-family:var(--mono);font-size:9px;color:var(--buy);margin-top:1px}
+.exp-detail{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px}
+.exp-price{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent);white-space:nowrap;flex-shrink:0}
+.exp-actions{display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--border)}
+.xlsx-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:9px;background:rgba(0,229,160,.1);color:var(--accent);border:1px solid var(--accent);border-radius:8px;font-family:var(--display);font-weight:800;font-size:10px;cursor:pointer}
+.xlsx-btn.blue{background:rgba(0,170,255,.1);color:var(--buy);border-color:var(--buy)}
+.xlsx-btn.purple{background:rgba(167,139,250,.1);color:var(--new);border-color:var(--new)}
+
+/* WATCHLIST */
+.watch-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border)}
+.watch-item:last-child{border-bottom:none}
+.watch-name{flex:1;font-size:12px;font-weight:700}
+.watch-count{font-family:var(--mono);font-size:10px;color:var(--accent)}
+.watch-del{background:transparent;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:3px}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:400;display:none;align-items:flex-end;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:18px 18px 0 0;width:100%;max-width:600px;max-height:88vh;overflow-y:auto;padding:18px;padding-bottom:calc(18px + var(--sb))}
+.modal-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.modal-title{font-size:14px;font-weight:800}
+.modal-close{background:var(--surface2);border:1px solid var(--border);color:var(--muted);width:26px;height:26px;border-radius:50%;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+/* TOAST */
+.toast{position:fixed;bottom:calc(var(--sb) + 16px);left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--accent);color:var(--accent);padding:8px 16px;border-radius:20px;font-family:var(--mono);font-size:10px;z-index:999;white-space:nowrap;animation:ti .2s ease,to .3s ease 2.3s forwards}
+@keyframes ti{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes to{to{opacity:0}}
+
+/* SETTINGS */
+.ss{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.ss-t{padding:9px 14px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:8px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.sr{padding:10px 14px;border-bottom:1px solid var(--border)}.sr:last-child{border-bottom:none}
+.sl{font-family:var(--mono);font-size:8px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.si2{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:8px 11px;color:var(--text);font-family:var(--mono);font-size:11px;outline:none;-webkit-appearance:none}
+.wh-box{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:8px 11px;display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px}
+.wh-url{font-family:var(--mono);font-size:9px;color:var(--accent);flex:1;word-break:break-all}
+.cp-btn{background:var(--surface);border:1px solid var(--border);color:var(--muted);padding:4px 8px;border-radius:5px;font-family:var(--mono);font-size:8px;cursor:pointer;flex-shrink:0}
+.sv-btn{width:100%;padding:11px;background:var(--accent);color:var(--bg);border:none;border-radius:9px;font-family:var(--display);font-weight:800;font-size:13px;cursor:pointer;margin-top:4px}
+.cl-btn{width:100%;padding:10px;background:transparent;color:var(--danger);border:1px solid var(--danger);border-radius:9px;font-family:var(--display);font-weight:700;font-size:12px;cursor:pointer}
+.logout-btn{width:100%;padding:10px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:9px;font-family:var(--display);font-weight:700;font-size:12px;cursor:pointer}
+
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="authScreen">
+  <div class="auth-card">
+    <div class="auth-logo"><div class="auth-icon">📱</div><h1>WA <span>Trading</span></h1></div>
+    <p class="auth-sub">Business intelligence platform for electronics wholesale traders.</p>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuth('login',this)">Login</button>
+      <button class="auth-tab" onclick="switchAuth('register',this)">Register</button>
+    </div>
+    <!-- LOGIN -->
+    <div id="loginForm">
+      <div class="fi"><label>Email</label><input type="email" id="loginEmail" placeholder="your@email.com"></div>
+      <div class="fi"><label>Password</label><input type="password" id="loginPw" placeholder="Password"></div>
+      <button class="btn-p" onclick="doLogin()">Login</button>
+      <button class="btn-d" onclick="demoMode()">👁️ Demo Mode (no account)</button>
+      <div class="auth-err" id="loginErr"></div>
+    </div>
+    <!-- REGISTER -->
+    <div id="registerForm" style="display:none">
+      <div class="fi"><label>Full Name</label><input type="text" id="regName" placeholder="Ahmed Al Yousif"></div>
+      <div class="fi"><label>Company</label><input type="text" id="regCompany" placeholder="Pro Tech Trading FZCO"></div>
+      <div class="fi"><label>Email</label><input type="email" id="regEmail" placeholder="your@email.com"></div>
+      <div class="fi"><label>Password</label><input type="password" id="regPw" placeholder="Min 6 characters"></div>
+      <button class="btn-p" onclick="doRegister()">Create Account</button>
+      <div class="auth-err" id="regErr"></div>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="h-inner">
+    <div class="logo"><div class="li">📱</div>WA <span>Intel</span></div>
+    <div class="h-right">
+      <div class="ldot"></div>
+      <div class="pill off" id="pill">OFFLINE</div>
+      <div class="user-badge" id="userBadge" onclick="showTab('settings',document.querySelector('[data-tab=settings]'))">👤</div>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" data-tab="feed" onclick="showTab('feed',this)">📋 Feed</button>
+    <button class="tab" data-tab="market" onclick="showTab('market',this)">🔥 Market</button>
+    <button class="tab" data-tab="analytics" onclick="showTab('analytics',this)">📊 Stats</button>
+    <button class="tab" data-tab="ai" onclick="showTab('ai',this)">🤖 AI</button>
+    <button class="tab" data-tab="margin" onclick="showTab('margin',this)">💰 Margin</button>
+    <button class="tab" data-tab="watchlist" onclick="showTab('watchlist',this)">👁 Watch</button>
+    <button class="tab" data-tab="traders" onclick="showTab('traders',this)">👥 Traders</button>
+    <button class="tab" data-tab="team" onclick="showTab('team',this)">🏢 Team</button>
+    <button class="tab" data-tab="channels" onclick="showTab('channels',this)">📱 Channels</button>
+    <button class="tab" data-tab="export" onclick="showTab('export',this)">📤 Export</button>
+    <button class="tab" data-tab="settings" onclick="showTab('settings',this)">⚙️ Setup</button>
+  </div>
+</header>
+
+<!-- CONTENT -->
+<div class="content">
+
+<!-- FEED -->
+<div class="pane active" id="pane-feed">
+  <div class="filters">
+    <button class="chip active" onclick="setF('all',this)">All</button>
+    <button class="chip" onclick="setF('WTS',this)">WTS</button>
+    <button class="chip b" onclick="setF('WTB',this)">WTB</button>
+    <button class="chip" onclick="setF('new',this)">New</button>
+    <button class="chip" onclick="setF('used',this)">Used</button>
+    <button class="chip r" onclick="setF('hot',this)">🔥 Hot Deals</button>
+    <button class="chip" onclick="setF('flagged',this)">⚠️ Flagged</button>
+    <button class="chip" onclick="setF('mine',this)">👤 Assigned to me</button>
+    <button class="chip" onclick="setF('iPhone',this)">iPhone</button>
+    <button class="chip" onclick="setF('Samsung',this)">Samsung</button>
+    <button class="chip" onclick="setF('iPad',this)">iPad</button>
+    <button class="chip" onclick="setF('MacBook',this)">MacBook</button>
+  </div>
+  <div class="sw"><input class="si" id="search" placeholder="🔍  Model, color, country, grade, seller..." oninput="renderFeed()"></div>
+  <div id="feedList"><div class="empty"><span class="empty-icon">📡</span>Waiting for messages…</div></div>
+</div>
+
+<!-- MARKET -->
+<div class="pane" id="pane-market">
+  <div class="pbody">
+    <div class="kgrid" style="padding:0">
+      <div class="kpi r"><div class="kl">🔥 Hot Items</div><div class="kv" id="mHot">0</div><div class="ksub">demand > supply</div></div>
+      <div class="kpi b"><div class="kl">Most Wanted</div><div class="kv" id="mWanted" style="font-size:11px;margin-top:4px">—</div></div>
+      <div class="kpi g"><div class="kl">Most Sold</div><div class="kv" id="mSold" style="font-size:11px;margin-top:4px">—</div></div>
+      <div class="kpi o"><div class="kl">Oversupplied</div><div class="kv" id="mOver" style="font-size:11px;margin-top:4px">—</div></div>
+    </div>
+    <div class="sec"><div class="sec-h"><div class="sec-t"><div class="dot" style="background:var(--hot)"></div>Demand vs Supply Heatmap</div></div><div id="demandList"><div class="empty">No data yet</div></div></div>
+    <div class="sec"><div class="sec-h"><div class="sec-t"><div class="dot"></div>Price Tracker</div></div><div id="priceList"><div class="empty">Need 2+ priced listings per model</div></div></div>
+  </div>
+</div>
+
+<!-- ANALYTICS -->
+<div class="pane" id="pane-analytics">
+  <div class="kgrid">
+    <div class="kpi g"><div class="kl">Total</div><div class="kv" id="kT">0</div></div>
+    <div class="kpi g"><div class="kl">For Sale</div><div class="kv" id="kS">0</div></div>
+    <div class="kpi b"><div class="kl">Wanted</div><div class="kv" id="kB">0</div></div>
+    <div class="kpi o"><div class="kl">Avg Price</div><div class="kv" id="kA">—</div></div>
+    <div class="kpi p"><div class="kl">Brand New</div><div class="kv" id="kN">0</div></div>
+    <div class="kpi y"><div class="kl">Used</div><div class="kv" id="kU">0</div></div>
+    <div class="kpi r"><div class="kl">Hot Deals</div><div class="kv" id="kH">0</div></div>
+    <div class="kpi o"><div class="kl">Today</div><div class="kv" id="kD">0</div></div>
+  </div>
+  <div class="sec"><div class="sec-h"><div class="sec-t"><div class="dot"></div>Buy vs Sell</div></div>
+    <div class="donut-row">
+      <svg viewBox="0 0 80 80" width="76" height="76" style="flex-shrink:0">
+        <circle cx="40" cy="40" r="30" fill="none" stroke="var(--surface2)" stroke-width="12"/>
+        <circle cx="40" cy="40" r="30" fill="none" stroke="var(--sell)" stroke-width="12" stroke-dasharray="0 188.5" transform="rotate(-90 40 40)" id="dS" style="transition:stroke-dasharray .6s"/>
+        <circle cx="40" cy="40" r="30" fill="none" stroke="var(--buy)" stroke-width="12" stroke-dasharray="0 188.5" transform="rotate(-90 40 40)" id="dB" style="transition:stroke-dasharray .6s"/>
+      </svg>
+      <div class="leg">
+        <div class="li2"><div class="ldot2" style="background:var(--sell)"></div>WTS<span class="lv" id="pS">0%</span></div>
+        <div class="li2"><div class="ldot2" style="background:var(--buy)"></div>WTB<span class="lv" id="pB">0%</span></div>
+        <div class="li2"><div class="ldot2" style="background:var(--new)"></div>New<span class="lv" id="pN">0%</span></div>
+        <div class="li2"><div class="ldot2" style="background:var(--used)"></div>Used<span class="lv" id="pU">0%</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="sec"><div class="sec-h"><div class="sec-t"><div class="dot"></div>Top Models</div></div><div class="bars" id="mBars"></div></div>
+  <div class="sec"><div class="sec-h"><div class="sec-t"><div class="dot"></div>By Country</div></div><div class="bars" id="cBars"></div></div>
+  <div class="sec"><div class="sec-h"><div class="sec-t"><div class="dot"></div>Grade Distribution</div></div><div class="bars" id="gBars"></div></div>
+</div>
+
+<!-- AI -->
+<div class="pane" id="pane-ai">
+  <div class="pbody">
+    <div class="ai-card">
+      <div class="ai-card-h"><div class="ai-card-t"><div class="dot"></div>📰 Daily Market Briefing</div><button class="ai-btn" onclick="aiBriefing()">Generate</button></div>
+      <div class="ai-output muted" id="aiBriefOut">Tap Generate for today's AI market summary...</div>
+    </div>
+    <div class="ai-card">
+      <div class="ai-card-h"><div class="ai-card-t"><div class="dot"></div>💰 Price Advisor</div></div>
+      <div class="ai-input-row"><input class="si" id="priceIn" placeholder="e.g. iPhone 16 Pro Max 256GB..."><button class="ai-btn blue" onclick="aiPrice()">Analyze</button></div>
+      <div class="ai-output muted" id="aiPriceOut">Enter a device to get fair market price analysis...</div>
+    </div>
+    <div class="ai-card">
+      <div class="ai-card-h"><div class="ai-card-t"><div class="dot"></div>👤 Trader Profiler</div></div>
+      <div class="ai-input-row"><input class="si" id="profIn" placeholder="Phone number or trader name..."><button class="ai-btn purple" onclick="aiProfile()">Profile</button></div>
+      <div class="ai-output muted" id="aiProfOut">Enter a trader to get their full profile...</div>
+    </div>
+    <div class="ai-card">
+      <div class="ai-card-h"><div class="ai-card-t"><div class="dot"></div>🔍 Item Intelligence</div></div>
+      <div class="ai-input-row"><input class="si" id="itemIn" placeholder="Ask anything about any device..."><button class="ai-btn orange" onclick="aiItem()">Ask AI</button></div>
+      <div class="ai-output muted" id="aiItemOut">Specs, prices, what to check when buying used...</div>
+    </div>
+  </div>
+</div>
+
+<!-- MARGIN CALCULATOR -->
+<div class="pane" id="pane-margin">
+  <div class="pbody">
+    <div class="sec">
+      <div class="sec-h"><div class="sec-t"><div class="dot"></div>💰 Margin & Profit Calculator</div></div>
+      <div class="calc-grid">
+        <div class="calc-field"><label>Buy Price ($)</label><input type="number" id="cBuy" placeholder="900" oninput="calcMargin()"></div>
+        <div class="calc-field"><label>Sell Price ($)</label><input type="number" id="cSell" placeholder="1100" oninput="calcMargin()"></div>
+        <div class="calc-field"><label>Quantity</label><input type="number" id="cQty" placeholder="1" oninput="calcMargin()"></div>
+        <div class="calc-field"><label>Shipping Total ($)</label><input type="number" id="cShip" placeholder="0" oninput="calcMargin()"></div>
+        <div class="calc-field"><label>Duty / Tax (%)</label><input type="number" id="cDuty" placeholder="0" oninput="calcMargin()"></div>
+        <div class="calc-field"><label>Other Costs ($)</label><input type="number" id="cOther" placeholder="0" oninput="calcMargin()"></div>
+      </div>
+      <div class="calc-result" id="calcResult" style="display:none">
+        <div class="cres-item"><label>Cost Per Unit</label><div class="cres-val" id="rCost" style="color:var(--warn)">—</div></div>
+        <div class="cres-item"><label>Profit Per Unit</label><div class="cres-val" id="rProfit" style="color:var(--sell)">—</div></div>
+        <div class="cres-item"><label>Margin %</label><div class="cres-val" id="rMargin" style="color:var(--accent)">—</div></div>
+        <div class="cres-item"><label>ROI %</label><div class="cres-val" id="rROI" style="color:var(--new)">—</div></div>
+        <div class="cres-item" style="grid-column:1/-1"><label>Total Profit (all units)</label><div class="cres-val" id="rTotal" style="color:var(--sell);font-size:18px">—</div></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-h"><div class="sec-t"><div class="dot"></div>🔔 Price Alerts</div><button class="ai-btn" onclick="showAlertModal()" style="font-size:9px">+ Add Alert</button></div>
+      <div id="alertsList"><div class="empty">No alerts set</div></div>
+    </div>
+    <div class="sec">
+      <div class="sec-h"><div class="sec-t"><div class="dot"></div>📈 Historical Snapshots</div><button class="ai-btn" onclick="saveSnap()" style="font-size:9px;background:var(--surface2);color:var(--muted);border:1px solid var(--border)">Save Now</button></div>
+      <div id="snapsList"><div class="empty">No snapshots yet</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- WATCHLIST -->
+<div class="pane" id="pane-watchlist">
+  <div class="pbody">
+    <div class="sec">
+      <div class="sec-h"><div class="sec-t"><div class="dot"></div>Add Item to Watch</div></div>
+      <div style="padding:10px 14px;display:flex;gap:8px">
+        <input class="si" id="watchIn" placeholder="e.g. iPhone 16 Pro Max..." style="flex:1">
+        <button class="ai-btn" onclick="addWatch()">+ Add</button>
+      </div>
+    </div>
+    <div class="sec"><div class="sec-h"><div class="sec-t"><div class="dot"></div>Watching</div><div class="sec-c" id="watchCount">0 items</div></div><div id="watchList"><div class="empty">Nothing yet</div></div></div>
+    <div class="sec"><div class="sec-h"><div class="sec-t"><div class="dot" style="background:var(--warn)"></div>Matched Listings</div></div><div id="watchMatches"><div class="empty">Add items to see matches</div></div></div>
+  </div>
+</div>
+
+<!-- TRADERS -->
+<div class="pane" id="pane-traders">
+  <div id="traderList" style="padding-top:4px"><div class="empty"><span class="empty-icon">👥</span>No traders yet</div></div>
+</div>
+
+<!-- TEAM -->
+<div class="pane" id="pane-team">
+  <div class="pbody">
+    <div class="sec"><div class="sec-h"><div class="sec-t"><div class="dot"></div>Team Members</div></div><div id="teamList"><div class="empty">Loading...</div></div></div>
+    <div class="sec">
+      <div class="sec-h"><div class="sec-t"><div class="dot"></div>Pipeline Overview</div></div>
+      <div class="kgrid" style="padding:12px">
+        <div class="kpi b"><div class="kl">New</div><div class="kv" id="pipNew">0</div></div>
+        <div class="kpi y"><div class="kl">Contacted</div><div class="kv" id="pipContacted">0</div></div>
+        <div class="kpi o"><div class="kl">Negotiating</div><div class="kv" id="pipNeg">0</div></div>
+        <div class="kpi g"><div class="kl">Deal Done</div><div class="kv" id="pipDone">0</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EXPORT -->
+<div class="pane" id="pane-export">
+  <div class="pbody">
+    <input class="si" id="expSearch" placeholder="🔍  Filter by item (blank = all)..." oninput="renderExport()" style="border-radius:10px;background:var(--surface);border:1px solid var(--border);padding:11px 13px">
+    <div class="exp-card">
+      <div class="exp-card-h"><div style="font-size:11px;font-weight:700;display:flex;align-items:center;gap:6px"><div class="dot" style="width:5px;height:5px;border-radius:50%;background:var(--sell)"></div>WTS Sellers</div><div style="font-family:var(--mono);font-size:9px;color:var(--muted)">Found: <b id="wtsCount" style="color:var(--accent)">0</b></div></div>
+      <div class="exp-rows" id="wtsRows"><div class="empty">Search or scroll up</div></div>
+      <div class="exp-actions"><button class="xlsx-btn" onclick="exportXLSX('wts')">📥 Export Sellers</button></div>
+    </div>
+    <div class="exp-card">
+      <div class="exp-card-h"><div style="font-size:11px;font-weight:700;display:flex;align-items:center;gap:6px"><div class="dot" style="width:5px;height:5px;border-radius:50%;background:var(--buy)"></div>WTB Buyers</div><div style="font-family:var(--mono);font-size:9px;color:var(--muted)">Found: <b id="wtbCount" style="color:var(--accent)">0</b></div></div>
+      <div class="exp-rows" id="wtbRows"><div class="empty">Search or scroll up</div></div>
+      <div class="exp-actions"><button class="xlsx-btn blue" onclick="exportXLSX('wtb')">📥 Export Buyers</button></div>
+    </div>
+    <button class="xlsx-btn purple" style="padding:12px;border-radius:10px;width:100%;font-size:11px" onclick="exportXLSX('both')">📊 Export Both Sheets</button>
+    <button class="xlsx-btn" style="padding:12px;border-radius:10px;width:100%;font-size:11px;background:rgba(167,139,250,.1);color:var(--new);border-color:var(--new)" onclick="exportXLSX('report')">📈 Full Market Report</button>
+  </div>
+</div>
+
+<!-- CHANNELS & GROUPS -->
+<div class="pane" id="pane-channels">
+  <div class="pbody">
+
+    <!-- ADD CHANNEL -->
+    <div class="sec">
+      <div class="sec-h"><div class="sec-t"><div class="dot"></div>Add WhatsApp Number</div></div>
+      <div class="add-channel-form">
+        <div class="fi" style="margin:0"><label>Label (e.g. "Main Number" or "UAE Number")</label><input class="si2" id="chLabel" placeholder="My Trading Number"></div>
+        <div class="fi" style="margin:0"><label>Whapi.Cloud API Token</label><input class="si2" type="password" id="chToken" placeholder="Token from Whapi dashboard..."></div>
+        <button class="ai-btn" style="width:100%;padding:10px" onclick="addChannel()">➕ Add WhatsApp Number</button>
+      </div>
+    </div>
+
+    <!-- CHANNELS LIST -->
+    <div id="channelsList"></div>
+
+    <!-- WEBHOOK INSTRUCTIONS -->
+    <div class="sec">
+      <div class="sec-h"><div class="sec-t"><div class="dot"></div>How to Connect Each Number</div></div>
+      <div style="padding:12px 14px">
+        <div class="webhook-info">
+          1. Add your number above with its Whapi token<br>
+          2. Each number gets a <b>unique webhook URL</b> shown below<br>
+          3. In Whapi → Settings → Webhooks → paste that URL<br>
+          4. Click <b>Fetch Groups</b> to load your groups<br>
+          5. Toggle groups ON/OFF to control what gets tracked<br><br>
+          <b>Multiple numbers:</b> Repeat for each WhatsApp number.<br>
+          All feed into the same dashboard.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="pane" id="pane-settings">
+  <div class="pbody">
+    <div class="ss">
+      <div class="ss-t">Account</div>
+      <div class="sr"><div class="sl">Logged in as</div><div style="font-family:var(--mono);font-size:11px;color:var(--accent)" id="settingsUser">—</div></div>
+      <div class="sr" style="border-bottom:none"><button class="logout-btn" onclick="logout()">🚪 Logout</button></div>
+    </div>
+    <div class="ss">
+      <div class="ss-t">WhatsApp Connection</div>
+      <div class="sr"><div class="sl">Whapi.Cloud Token</div><input class="si2" type="password" id="cfgToken" placeholder="Your token..."></div>
+      <div class="sr" style="border-bottom:none"><button class="sv-btn" onclick="saveSettings()">Save & Connect</button></div>
+    </div>
+    <div class="ss">
+      <div class="ss-t">Webhook URL — paste in Whapi</div>
+      <div class="sr" style="border-bottom:none">
+        <div class="wh-box"><span class="wh-url" id="whUrl">Loading...</span><button class="cp-btn" onclick="copyWh()">COPY</button></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:8px;line-height:1.7">Whapi → Settings → Webhooks → paste above<br>Enable: <strong style="color:var(--text)">messages.upsert</strong></div>
+      </div>
+    </div>
+    <div class="ss">
+      <div class="ss-t">Storage</div>
+      <div class="sr"><div class="sl">Database</div><div style="font-family:var(--mono);font-size:11px;color:var(--accent)" id="dbStatus">—</div></div>
+      <div class="sr" style="border-bottom:none"><div class="sl">Listings Stored</div><div style="font-family:var(--mono);font-size:16px;color:var(--accent)" id="cfgCount">0</div></div>
+    </div>
+    <button class="cl-btn" onclick="clearAll()">🗑 Clear All Local Data</button>
+    <button class="btn-d" style="margin-top:6px" onclick="demoMode()">👁️ Load Demo Data</button>
+  </div>
+</div>
+
+</div><!-- end content -->
+
+<!-- AUTO-REPLY MODAL -->
+<div class="modal-bg" id="replyModal">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-h"><div class="modal-title">🤖 AI Auto-Reply Draft</div><button class="modal-close" onclick="closeModal('replyModal')">✕</button></div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:10px">Select your intent:</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+      <button class="pip-btn contacted" onclick="setIntent('Interested, asking for more details')">Interested</button>
+      <button class="pip-btn done" onclick="setIntent('Ready to buy, asking for final price')">Ready to Buy</button>
+      <button class="pip-btn negotiating" onclick="setIntent('Negotiating price, offering lower')">Negotiate</button>
+      <button class="pip-btn pass" onclick="setIntent('Politely declining')">Decline</button>
+    </div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:6px">Or type custom intent:</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <input class="si" id="intentInput" placeholder="What do you want to say?" style="flex:1">
+      <button class="ai-btn" onclick="generateReply()">Draft</button>
+    </div>
+    <div class="ai-output muted" id="replyOutput" style="border:1px solid var(--border);border-radius:8px;margin-bottom:10px">Select intent above...</div>
+    <button class="btn-p" onclick="copyReply()">📋 Copy Reply</button>
+  </div>
+</div>
+
+<!-- ALERT MODAL -->
+<div class="modal-bg" id="alertModal">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-h"><div class="modal-title">🔔 Set Price Alert</div><button class="modal-close" onclick="closeModal('alertModal')">✕</button></div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Get notified when a listing appears below your target price.</p>
+    <div class="fi"><label>Device Model</label><input type="text" id="alertModel" placeholder="e.g. iPhone 16 Pro Max"></div>
+    <div class="fi"><label>Alert when price is below ($)</label><input type="number" id="alertPrice" placeholder="e.g. 1000"></div>
+    <button class="btn-p" onclick="saveAlert()">Set Alert</button>
+  </div>
+</div>
+
+<script>
+// ── FLAGS ──
+const FLAGS={UAE:'🇦🇪','Saudi Arabia':'🇸🇦',Kuwait:'🇰🇼',Bahrain:'🇧🇭',Qatar:'🇶🇦',Oman:'🇴🇲',Jordan:'🇯🇴',Lebanon:'🇱🇧',Egypt:'🇪🇬',Morocco:'🇲🇦',Pakistan:'🇵🇰',India:'🇮🇳',UK:'🇬🇧',USA:'🇺🇸',Germany:'🇩🇪',France:'🇫🇷',Turkey:'🇹🇷',Iraq:'🇮🇶',Syria:'🇸🇾',Algeria:'🇩🇿',Tunisia:'🇹🇳'};
+
+// ── STATE ──
+const S={
+  listings:[],traders:{},watchlist:JSON.parse(localStorage.getItem('wa_watch')||'[]'),
+  alerts:[],team:[],token:'',user:null,isDemo:false,
+};
+let pollInt=null,lastTs=0,expWTS=[],expWTB=[],currentListing=null,currentIntent='';
+
+// ── INIT ──
+window.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('whUrl').textContent=location.origin+'/webhook';
+  const tok=localStorage.getItem('wa_token');
+  if(tok){S.token=tok;validateToken();}
+});
+
+async function validateToken(){
+  try{
+    const r=await api('/api/auth/me');
+    S.user=r;
+    enterApp();
+  }catch{localStorage.removeItem('wa_token');S.token='';}
+}
+
+// ── AUTH ──
+function switchAuth(mode,btn){
+  document.querySelectorAll('.auth-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('loginForm').style.display=mode==='login'?'block':'none';
+  document.getElementById('registerForm').style.display=mode==='register'?'block':'none';
+}
+
+async function doLogin(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const pw=document.getElementById('loginPw').value;
+  document.getElementById('loginErr').textContent='';
+  try{
+    const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pw})});
+    const d=await r.json();
+    if(!r.ok) throw new Error(d.error);
+    S.token=d.token;S.user=d.user;
+    localStorage.setItem('wa_token',d.token);
+    enterApp();
+  }catch(e){document.getElementById('loginErr').textContent=e.message;}
+}
+
+async function doRegister(){
+  const name=document.getElementById('regName').value.trim();
+  const company=document.getElementById('regCompany').value.trim();
+  const email=document.getElementById('regEmail').value.trim();
+  const pw=document.getElementById('regPw').value;
+  document.getElementById('regErr').textContent='';
+  if(pw.length<6){document.getElementById('regErr').textContent='Password min 6 characters';return;}
+  try{
+    const r=await fetch('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,company,email,password:pw})});
+    const d=await r.json();
+    if(!r.ok) throw new Error(d.error);
+    S.token=d.token;S.user=d.user;
+    localStorage.setItem('wa_token',d.token);
+    enterApp();
+  }catch(e){document.getElementById('regErr').textContent=e.message;}
+}
+
+function demoMode(){
+  S.isDemo=true;S.user={name:'Demo User',email:'demo@wa-trading.com',role:'admin'};
+  document.getElementById('authScreen').style.display='none';
+  setPill('demo','DEMO');
+  loadDemo();setupUI();
+}
+
+function enterApp(){
+  document.getElementById('authScreen').style.display='none';
+  setupUI();startLive();loadTeam();initChannels();
+}
+
+function setupUI(){
+  if(S.user){
+    document.getElementById('userBadge').textContent='👤 '+S.user.name.split(' ')[0];
+    document.getElementById('settingsUser').textContent=S.user.name+' ('+S.user.role+')';
+  }
+  checkHealth();
+}
+
+async function checkHealth(){
+  try{const r=await fetch('/health');const d=await r.json();document.getElementById('dbStatus').textContent=d.db==='mongodb'?'✅ MongoDB':'⚠️ In-Memory';}catch{}
+}
+
+function logout(){
+  localStorage.removeItem('wa_token');
+  S.token='';S.user=null;S.listings=[];
+  if(pollInt) clearInterval(pollInt);
+  document.getElementById('authScreen').style.display='flex';
+}
+
+// ── API HELPER ──
+async function api(url,method='GET',body=null){
+  const opts={method,headers:{'Content-Type':'application/json','Authorization':'Bearer '+S.token}};
+  if(body) opts.body=JSON.stringify(body);
+  const r=await fetch(url,opts);
+  const d=await r.json();
+  if(!r.ok) throw new Error(d.error||'API error');
+  return d;
+}
+
+// ── LIVE POLLING ──
+function startLive(){
+  if(pollInt) clearInterval(pollInt);
+  setPill('on','LIVE');
+  poll();pollInt=setInterval(poll,5000);
+}
+async function poll(){
+  if(S.isDemo) return;
+  try{
+    const msgs=await api('/api/messages?since='+lastTs+'&limit=100');
+    if(msgs.length){lastTs=msgs[0].timestamp;msgs.reverse().forEach(addListing);updateAll();}
+  }catch{}
+}
+
+// ── ADD LISTING ──
+function addListing(l){
+  l.time=new Date((l.timestamp||Date.now()/1000)*1000);
+  S.listings.unshift(l);
+  if(S.listings.length>2000) S.listings.pop();
+  const n=l.sender||'?';
+  if(!S.traders[n]) S.traders[n]={wts:0,wtb:0,country:l.sellerCountry};
+  if(l.type==='WTS') S.traders[n].wts++; else S.traders[n].wtb++;
+  checkWatchlistMatch(l);
+  checkLocalAlert(l);
+}
+
+function checkLocalAlert(l){
+  if(!l.price||!l.model) return;
+  S.alerts.forEach(a=>{if(a.model.toLowerCase()===l.model.toLowerCase()&&l.price<=a.targetPrice) toast('🔔 Alert: '+l.model+' at $'+l.price+'!');});
+}
+
+// ── RENDER FEED ──
+let af='all';
+function setF(f,btn){af=f;document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));btn.classList.add('active');renderFeed();}
+function renderFeed(){
+  const q=document.getElementById('search').value.toLowerCase();
+  let list=S.listings;
+  if(af==='WTS') list=list.filter(l=>l.type==='WTS');
+  else if(af==='WTB') list=list.filter(l=>l.type==='WTB');
+  else if(af==='new') list=list.filter(l=>l.condition==='Brand New');
+  else if(af==='used') list=list.filter(l=>l.condition==='Used');
+  else if(af==='hot') list=list.filter(l=>l.dealScore>=8);
+  else if(af==='flagged') list=list.filter(l=>l.isFlagged);
+  else if(af==='mine') list=list.filter(l=>l.assignedTo===S.user?.email);
+  else if(af!=='all') list=list.filter(l=>(l.model||'').toLowerCase().includes(af.toLowerCase()));
+  if(q) list=list.filter(l=>(l.model||'').toLowerCase().includes(q)||(l.color||'').toLowerCase().includes(q)||(l.summary||'').toLowerCase().includes(q)||(l.sellerCountry||'').toLowerCase().includes(q)||(l.grade||'').toLowerCase().includes(q)||(l.sender||'').toLowerCase().includes(q));
+  const el=document.getElementById('feedList');
+  if(!list.length){el.innerHTML=`<div class="empty"><span class="empty-icon">📡</span>${S.listings.length?'No results':'Waiting for messages…'}</div>`;return;}
+  el.innerHTML=list.slice(0,150).map(l=>{
+    const country=l.sellerCountry||l.listingCountry||'';
+    const flag=FLAGS[country]||'';
+    const specs=[l.storage,l.ram,l.color,l.condition==='Used'&&l.grade?'Grade '+l.grade:null,l.qty?'x'+l.qty:null].filter(Boolean);
+    const priceStr=l.price?(l.currency==='AED'?'AED ':'$')+l.price.toLocaleString():'';
+    const score=l.dealScore;
+    const scoreCls=score>=8?'score-high':score>=5?'score-mid':score?'score-low':'';
+    const scoreLabel=score?'⭐ '+score+'/10':'';
+    const status=l.status||'new';
+    const assignee=l.assignedTo?l.assignedTo.split('@')[0]:'';
+    return`<div class="listing">
+      ${scoreLabel?`<div class="score-badge ${scoreCls}">${scoreLabel}</div>`:''}
+      ${l.isFlagged?`<div class="flag-banner">⚠️ ${esc(l.flagReason||'Suspicious listing')}</div>`:''}
+      <div class="l-top">
+        <span class="tag ${l.type.toLowerCase()}">${l.type}</span>
+        <span class="tag ${l.condition==='Brand New'?'new':'used'}">${l.condition==='Brand New'?'NEW':'USED'}</span>
+        ${l.grade?`<span class="tag grade">Grade ${esc(l.grade)}</span>`:''}
+        <span class="l-model">${esc(l.model||'Unknown')}</span>
+        ${priceStr?`<span class="l-price">${priceStr}</span>`:''}
+      </div>
+      ${specs.length?`<div class="specs">${specs.map(s=>`<span class="sc">${esc(s)}</span>`).join('')}</div>`:''}
+      <div class="l-meta">
+        <span>👤 ${esc(l.sender||'?')}</span>
+        ${country?`<span>${flag} ${esc(country)}</span>`:''}
+        ${l.scoreReason?`<span style="color:var(--muted);font-size:8px">· ${esc(l.scoreReason)}</span>`:''}
+        <span style="margin-left:auto;font-size:8px">${timeAgo(l.time)}</span>
+      </div>
+      <div class="l-raw">${esc(l.summary||l.raw||'')}</div>
+      <div class="contact-row">
+        <a class="btn-wa" href="https://wa.me/${l.sender}" target="_blank">💬 WhatsApp</a>
+        <a class="btn-call" href="tel:+${l.sender}">📞 Call</a>
+        <button class="btn-reply" onclick="openReply(${JSON.stringify(l).replace(/"/g,'&quot;')})">🤖 AI Reply</button>
+      </div>
+      <div class="pipeline-row">
+        <button class="pip-btn ${status==='new'?'new-s':''}" onclick="setPipeline('${l.id}','new')">New</button>
+        <button class="pip-btn ${status==='contacted'?'contacted':''}" onclick="setPipeline('${l.id}','contacted')">Contacted</button>
+        <button class="pip-btn ${status==='negotiating'?'negotiating':''}" onclick="setPipeline('${l.id}','negotiating')">Negotiating</button>
+        <button class="pip-btn ${status==='done'?'done':''}" onclick="setPipeline('${l.id}','done')">✅ Done</button>
+        <button class="pip-btn ${status==='pass'?'pass':''}" onclick="setPipeline('${l.id}','pass')">❌ Pass</button>
+      </div>
+      <div class="assign-row">
+        Assign: <select class="assign-select" onchange="assignListing('${l.id}',this.value)">
+          <option value="">— Unassigned —</option>
+          ${S.team.map(m=>`<option value="${m.email}" ${l.assignedTo===m.email?'selected':''}>${m.name}</option>`).join('')}
+        </select>
+        ${assignee?`<span style="color:var(--buy)">→ ${assignee}</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── PIPELINE ──
+async function setPipeline(id,status){
+  const l=S.listings.find(x=>x.id===id);
+  if(l) l.status=status;
+  if(!S.isDemo) try{await api('/api/listings/'+id,'PATCH',{status});}catch{}
+  renderFeed();renderTeam();toast('Status: '+status);
+}
+async function assignListing(id,email){
+  const l=S.listings.find(x=>x.id===id);
+  if(l) l.assignedTo=email||null;
+  if(!S.isDemo) try{await api('/api/listings/'+id,'PATCH',{assignedTo:email});}catch{}
+  renderFeed();toast('Assigned to: '+(email||'nobody'));
+}
+
+// ── AI REPLY ──
+function openReply(listing){
+  currentListing=listing;
+  document.getElementById('replyOutput').textContent='Select intent above...';
+  document.getElementById('replyOutput').className='ai-output muted';
+  document.getElementById('intentInput').value='';
+  document.getElementById('replyModal').classList.add('open');
+}
+function setIntent(intent){currentIntent=intent;document.getElementById('intentInput').value=intent;generateReply();}
+async function generateReply(){
+  const intent=document.getElementById('intentInput').value.trim()||currentIntent;
+  if(!intent||!currentListing) return;
+  const el=document.getElementById('replyOutput');
+  el.textContent='⏳ Drafting reply...';el.className='ai-output muted';
+  try{
+    const r=await api('/api/ai/autoreply','POST',{listing:currentListing,intent});
+    el.textContent=r.result;el.className='ai-output';
+  }catch(e){el.textContent='⚠️ '+e.message;el.className='ai-output';}
+}
+function copyReply(){
+  const text=document.getElementById('replyOutput').textContent;
+  navigator.clipboard.writeText(text).then(()=>toast('✅ Reply copied!'));
+  closeModal('replyModal');
+}
+
+// ── AI FUNCTIONS ──
+async function aiBriefing(){
+  const el=document.getElementById('aiBriefOut');
+  el.textContent='⏳ Generating...';el.className='ai-output muted';
+  try{const r=await api('/api/ai/briefing','POST');el.textContent=r.result;el.className='ai-output';}
+  catch(e){el.textContent='⚠️ '+e.message;el.className='ai-output';}
+}
+async function aiPrice(){
+  const model=document.getElementById('priceIn').value.trim();
+  if(!model){toast('Enter a model');return;}
+  const el=document.getElementById('aiPriceOut');
+  el.textContent='⏳ Analyzing '+model+'...';el.className='ai-output muted';
+  try{const r=await api('/api/ai/price','POST',{model});el.textContent=r.result;el.className='ai-output';}
+  catch(e){el.textContent='⚠️ '+e.message;el.className='ai-output';}
+}
+async function aiProfile(){
+  const query=document.getElementById('profIn').value.trim();
+  if(!query){toast('Enter a trader');return;}
+  const el=document.getElementById('aiProfOut');
+  el.textContent='⏳ Profiling...';el.className='ai-output muted';
+  try{const r=await api('/api/ai/profile','POST',{query});el.textContent=r.result;el.className='ai-output';}
+  catch(e){el.textContent='⚠️ '+e.message;el.className='ai-output';}
+}
+async function aiItem(){
+  const q=document.getElementById('itemIn').value.trim();
+  if(!q){toast('Enter a question');return;}
+  const el=document.getElementById('aiItemOut');
+  el.textContent='⏳ Thinking...';el.className='ai-output muted';
+  try{const r=await api('/api/ai/item','POST',{question:q});el.textContent=r.result;el.className='ai-output';}
+  catch(e){el.textContent='⚠️ '+e.message;el.className='ai-output';}
+}
+
+// ── MARGIN CALCULATOR ──
+function calcMargin(){
+  const buy=parseFloat(document.getElementById('cBuy').value)||0;
+  const sell=parseFloat(document.getElementById('cSell').value)||0;
+  const qty=parseFloat(document.getElementById('cQty').value)||1;
+  const ship=parseFloat(document.getElementById('cShip').value)||0;
+  const duty=parseFloat(document.getElementById('cDuty').value)||0;
+  const other=parseFloat(document.getElementById('cOther').value)||0;
+  if(!buy||!sell){document.getElementById('calcResult').style.display='none';return;}
+  const costPerUnit=(buy+ship/qty+other/qty)*(1+duty/100);
+  const profit=sell-costPerUnit;
+  const margin=((profit/sell)*100).toFixed(1);
+  const roi=((profit/costPerUnit)*100).toFixed(1);
+  const totalProfit=profit*qty;
+  const el=document.getElementById('calcResult');
+  el.style.display='grid';
+  document.getElementById('rCost').textContent='$'+costPerUnit.toFixed(2);
+  document.getElementById('rProfit').textContent=(profit>=0?'+':'')+'$'+profit.toFixed(2);
+  document.getElementById('rMargin').textContent=margin+'%';
+  document.getElementById('rROI').textContent=roi+'%';
+  document.getElementById('rTotal').textContent=(totalProfit>=0?'+':'')+'$'+totalProfit.toFixed(2);
+  document.getElementById('rProfit').style.color=profit>=0?'var(--sell)':'var(--danger)';
+  document.getElementById('rTotal').style.color=profit>=0?'var(--sell)':'var(--danger)';
+}
+
+// ── PRICE ALERTS ──
+function showAlertModal(){document.getElementById('alertModal').classList.add('open');}
+async function saveAlert(){
+  const model=document.getElementById('alertModel').value.trim();
+  const price=document.getElementById('alertPrice').value;
+  if(!model||!price){toast('Fill in model and price');return;}
+  const alert={model,targetPrice:Number(price),email:S.user?.email,active:true};
+  S.alerts.push(alert);
+  if(!S.isDemo) try{await api('/api/alerts','POST',{model,targetPrice:Number(price)});}catch{}
+  closeModal('alertModal');renderAlerts();toast('🔔 Alert set: '+model+' < $'+price);
+}
+function renderAlerts(){
+  const el=document.getElementById('alertsList');
+  if(!S.alerts.length){el.innerHTML='<div class="empty">No alerts set</div>';return;}
+  el.innerHTML=S.alerts.map(a=>`<div class="alert-item">
+    <div class="alert-info"><div class="alert-model">${esc(a.model)}</div><div class="alert-target">Alert when below $${a.targetPrice.toLocaleString()}</div></div>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--accent)">ACTIVE</div>
+  </div>`).join('');
+}
+
+// ── SNAPSHOTS ──
+async function saveSnap(){
+  try{
+    if(!S.isDemo){await api('/api/snapshots','POST');}
+    else{mem_snaps.push({date:new Date(),totalListings:S.listings.length,wts:S.listings.filter(l=>l.type==='WTS').length,wtb:S.listings.filter(l=>l.type==='WTB').length});}
+    renderSnaps();toast('📸 Snapshot saved');
+  }catch(e){toast('⚠️ '+e.message);}
+}
+const mem_snaps=[];
+async function renderSnaps(){
+  let snaps=[];
+  try{if(!S.isDemo) snaps=await api('/api/snapshots');else snaps=mem_snaps;}catch{}
+  const el=document.getElementById('snapsList');
+  if(!snaps.length){el.innerHTML='<div class="empty">No snapshots yet</div>';return;}
+  el.innerHTML=snaps.slice(0,10).map(s=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border)">
+    <div style="flex:1"><div style="font-size:11px;font-weight:700">${new Date(s.date).toLocaleDateString()}</div><div style="font-family:var(--mono);font-size:9px;color:var(--muted)">${s.totalListings} listings · ${s.wts}S ${s.wtb}B</div></div>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--accent)">${s.auto?'AUTO':'MANUAL'}</div>
+  </div>`).join('');
+}
+
+// ── TEAM ──
+async function loadTeam(){
+  try{S.team=await api('/api/team');}catch{S.team=[];}
+  renderTeam();
+}
+function renderTeam(){
+  const el=document.getElementById('teamList');
+  if(!S.team.length){el.innerHTML='<div class="empty">No team members</div>';return;}
+  el.innerHTML=S.team.map(m=>`<div class="team-row">
+    <div class="team-av">${(m.name[0]||'?').toUpperCase()}</div>
+    <div class="team-info"><div class="team-name">${esc(m.name)}</div><div class="team-email">${esc(m.email)}${m.company?' · '+esc(m.company):''}</div></div>
+    <div class="team-role ${m.role}">${m.role}</div>
+  </div>`).join('');
+  // Pipeline counts
+  document.getElementById('pipNew').textContent=S.listings.filter(l=>!l.status||l.status==='new').length;
+  document.getElementById('pipContacted').textContent=S.listings.filter(l=>l.status==='contacted').length;
+  document.getElementById('pipNeg').textContent=S.listings.filter(l=>l.status==='negotiating').length;
+  document.getElementById('pipDone').textContent=S.listings.filter(l=>l.status==='done').length;
+}
+
+// ── WATCHLIST ──
+function addWatch(){
+  const v=document.getElementById('watchIn').value.trim();
+  if(!v) return;
+  if(!S.watchlist.includes(v.toLowerCase())) S.watchlist.push(v.toLowerCase());
+  localStorage.setItem('wa_watch',JSON.stringify(S.watchlist));
+  document.getElementById('watchIn').value='';
+  renderWatchlist();toast('👁 Watching: '+v);
+}
+function removeWatch(i){S.watchlist.splice(i,1);localStorage.setItem('wa_watch',JSON.stringify(S.watchlist));renderWatchlist();}
+function checkWatchlistMatch(l){
+  const text=(l.model||''+l.summary||'').toLowerCase();
+  S.watchlist.forEach(w=>{if(text.includes(w)) toast('👁 Watchlist match: '+(l.model||w));});
+}
+function renderWatchlist(){
+  document.getElementById('watchCount').textContent=S.watchlist.length+' items';
+  const el=document.getElementById('watchList');
+  if(!S.watchlist.length){el.innerHTML='<div class="empty">Nothing yet</div>';return;}
+  el.innerHTML=S.watchlist.map((w,i)=>`<div class="watch-item">
+    <div class="watch-name">${esc(w)}</div>
+    <div class="watch-count">${S.listings.filter(l=>(l.model||''+l.summary||'').toLowerCase().includes(w)).length} matches</div>
+    <button class="watch-del" onclick="removeWatch(${i})">✕</button>
+  </div>`).join('');
+  const matches=S.listings.filter(l=>S.watchlist.some(w=>(l.model||''+l.summary||'').toLowerCase().includes(w)));
+  const mel=document.getElementById('watchMatches');
+  if(!matches.length){mel.innerHTML='<div class="empty">No matches yet</div>';return;}
+  mel.innerHTML=matches.slice(0,20).map(l=>{
+    const country=l.sellerCountry||l.listingCountry||'';
+    return`<div class="listing">
+      <div class="l-top"><span class="tag ${l.type.toLowerCase()}">${l.type}</span><span class="l-model">${esc(l.model||'?')}</span>${l.price?`<span class="l-price">$${l.price.toLocaleString()}</span>`:''}</div>
+      <div class="l-meta"><span>👤 ${esc(l.sender||'?')}</span>${country?`<span>${FLAGS[country]||'🌍'} ${esc(country)}</span>`:''}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── KPIs ──
+function renderKPIs(){
+  const a=S.listings;
+  const prices=a.filter(l=>l.price).map(l=>l.price);
+  const avg=prices.length?Math.round(prices.reduce((x,y)=>x+y,0)/prices.length):null;
+  const tod=new Date();tod.setHours(0,0,0,0);
+  document.getElementById('kT').textContent=a.length;
+  document.getElementById('kS').textContent=a.filter(l=>l.type==='WTS').length;
+  document.getElementById('kB').textContent=a.filter(l=>l.type==='WTB').length;
+  document.getElementById('kA').textContent=avg?'$'+avg.toLocaleString():'—';
+  document.getElementById('kN').textContent=a.filter(l=>l.condition==='Brand New').length;
+  document.getElementById('kU').textContent=a.filter(l=>l.condition==='Used').length;
+  document.getElementById('kH').textContent=a.filter(l=>l.dealScore>=8).length;
+  document.getElementById('kD').textContent=a.filter(l=>l.time&&l.time>=tod).length;
+}
+
+// ── DONUT ──
+function renderDonut(){
+  const a=S.listings,tot=a.length;if(!tot)return;
+  const wts=a.filter(l=>l.type==='WTS').length,wtb=a.filter(l=>l.type==='WTB').length,nn=a.filter(l=>l.condition==='Brand New').length;
+  const C=188.5,sa=(wts/tot)*C;
+  document.getElementById('dS').setAttribute('stroke-dasharray',sa+' '+C);
+  document.getElementById('dB').setAttribute('stroke-dasharray',(wtb/tot)*C+' '+C);
+  document.getElementById('dB').style.strokeDashoffset=-sa;
+  document.getElementById('pS').textContent=Math.round(wts/tot*100)+'%';
+  document.getElementById('pB').textContent=Math.round(wtb/tot*100)+'%';
+  document.getElementById('pN').textContent=Math.round(nn/tot*100)+'%';
+  document.getElementById('pU').textContent=Math.round((tot-nn)/tot*100)+'%';
+}
+
+// ── BARS ──
+function renderBars(){
+  const models={},countries={},grades={};
+  S.listings.forEach(l=>{if(l.model)models[l.model]=(models[l.model]||0)+1;const c=l.sellerCountry||l.listingCountry;if(c)countries[c]=(countries[c]||0)+1;if(l.grade)grades['Grade '+l.grade]=(grades['Grade '+l.grade]||0)+1;});
+  barList('mBars',models,'var(--sell)');barList('cBars',countries,'var(--buy)');barList('gBars',grades,'var(--used)');
+}
+function barList(id,obj,color){
+  const el=document.getElementById(id);
+  const s=Object.entries(obj).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  if(!s.length){el.innerHTML='<div style="color:var(--muted);font-size:10px;font-family:var(--mono);padding:4px">No data yet</div>';return;}
+  const mx=s[0][1];
+  el.innerHTML=s.map(([k,v])=>`<div class="br"><div class="bl" title="${k}">${k}</div><div class="bt"><div class="bf" style="width:${(v/mx*100).toFixed(1)}%;background:${color}"></div></div><div class="bn">${v}</div></div>`).join('');
+}
+
+// ── MARKET ──
+function renderMarket(){
+  const models={};
+  S.listings.forEach(l=>{if(!l.model)return;if(!models[l.model])models[l.model]={wts:0,wtb:0,prices:[]};if(l.type==='WTS')models[l.model].wts++;else models[l.model].wtb++;if(l.price)models[l.model].prices.push(l.price);});
+  const sorted=Object.entries(models).sort((a,b)=>(b[1].wts+b[1].wtb)-(a[1].wts+a[1].wtb));
+  const hot=sorted.filter(([m,d])=>d.wtb>d.wts&&d.wtb>=2);
+  const topW=sorted.sort((a,b)=>b[1].wtb-a[1].wtb)[0];
+  const topS=sorted.sort((a,b)=>b[1].wts-a[1].wts)[0];
+  const over=sorted.filter(([m,d])=>d.wts>d.wtb*2&&d.wts>=3)[0];
+  document.getElementById('mHot').textContent=hot.length;
+  document.getElementById('mWanted').textContent=topW?topW[0].split(' ').slice(0,3).join(' '):'—';
+  document.getElementById('mSold').textContent=topS?topS[0].split(' ').slice(0,3).join(' '):'—';
+  document.getElementById('mOver').textContent=over?over[0].split(' ').slice(0,2).join(' '):'—';
+  // Demand vs supply
+  const dEl=document.getElementById('demandList');
+  const dS=Object.entries(models).filter(([m,d])=>d.wts+d.wtb>=2).sort((a,b)=>(b[1].wtb/Math.max(b[1].wts,1))-(a[1].wtb/Math.max(a[1].wts,1))).slice(0,10);
+  if(!dS.length){dEl.innerHTML='<div class="empty">No data yet</div>';return;}
+  const maxD=Math.max(...dS.map(([m,d])=>Math.max(d.wts,d.wtb)));
+  dEl.innerHTML=dS.map(([model,d])=>{
+    const ratio=(d.wtb/Math.max(d.wts,1)).toFixed(1);
+    const cls=ratio>1.5?'ratio-hot':ratio>0.8?'ratio-ok':'ratio-over';
+    const lbl=ratio>1.5?'🔥 HOT':ratio>0.8?'✅ OK':'📦 OVER';
+    return`<div class="demand-row">
+      <div class="demand-model">${esc(model)}</div>
+      <div class="d-bars">
+        <div class="dbar"><span style="color:var(--sell);width:22px">S${d.wts}</span><div class="dbar-t"><div class="dbar-f" style="width:${(d.wts/maxD*100).toFixed(0)}%;background:var(--sell)"></div></div></div>
+        <div class="dbar"><span style="color:var(--buy);width:22px">B${d.wtb}</span><div class="dbar-t"><div class="dbar-f" style="width:${(d.wtb/maxD*100).toFixed(0)}%;background:var(--buy)"></div></div></div>
+      </div>
+      <div class="${cls}">${lbl}</div>
+    </div>`;
+  }).join('');
+  // Price tracker
+  const pEl=document.getElementById('priceList');
+  const pI=Object.entries(models).filter(([m,d])=>d.prices.length>=2).sort((a,b)=>b[1].prices.length-a[1].prices.length).slice(0,8);
+  if(!pI.length){pEl.innerHTML='<div class="empty">Need 2+ priced listings per model</div>';return;}
+  pEl.innerHTML=pI.map(([model,d])=>{
+    const p=d.prices.sort((a,b)=>a-b);
+    const avg=Math.round(p.reduce((a,b)=>a+b,0)/p.length);
+    const trend=p[p.length-1]>p[0]?'↑ Rising':'↓ Dropping';
+    const tc=p[p.length-1]>p[0]?'var(--sell)':'var(--warn)';
+    return`<div class="price-item">
+      <div class="price-model">${esc(model)} <span style="color:${tc};font-size:10px">${trend}</span></div>
+      <div class="price-stats">
+        <div><div class="pstat-l">Min</div><div class="pstat-v" style="color:var(--sell)">$${p[0].toLocaleString()}</div></div>
+        <div><div class="pstat-l">Avg</div><div class="pstat-v" style="color:var(--accent)">$${avg.toLocaleString()}</div></div>
+        <div><div class="pstat-l">Max</div><div class="pstat-v" style="color:var(--warn)">$${p[p.length-1].toLocaleString()}</div></div>
+        <div><div class="pstat-l">Listings</div><div class="pstat-v">${p.length}</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── TRADERS ──
+function renderTraders(){
+  const el=document.getElementById('traderList');
+  const s=Object.entries(S.traders).map(([n,d])=>({n,total:d.wts+d.wtb,...d})).sort((a,b)=>b.total-a.total).slice(0,20);
+  if(!s.length){el.innerHTML='<div class="empty"><span class="empty-icon">👥</span>No traders yet</div>';return;}
+  el.innerHTML=s.map((t,i)=>{
+    const flag=t.country?(FLAGS[t.country]||'🌍'):'';
+    return`<div class="tr-row">
+      <div class="tr-rank">${i+1}</div>
+      <div class="tr-av">${(t.n[0]||'?').toUpperCase()}</div>
+      <div class="tr-info"><div class="tr-name">${esc(t.n)}</div>${t.country?`<div class="tr-country">${flag} ${t.country}</div>`:''}</div>
+      <div class="tr-stats"><span class="ts" style="color:var(--sell)">${t.wts}S</span><span class="ts" style="color:var(--buy);margin-left:4px">${t.wtb}B</span></div>
+    </div>`;
+  }).join('');
+}
+
+// ── EXPORT ──
+function renderExport(){
+  const q=(document.getElementById('expSearch').value||'').toLowerCase().trim();
+  expWTS=S.listings.filter(l=>l.type==='WTS'&&(!q||(l.model||'').toLowerCase().includes(q)||(l.summary||'').toLowerCase().includes(q)));
+  expWTB=S.listings.filter(l=>l.type==='WTB'&&(!q||(l.model||'').toLowerCase().includes(q)||(l.summary||'').toLowerCase().includes(q)));
+  document.getElementById('wtsCount').textContent=expWTS.length;
+  document.getElementById('wtbCount').textContent=expWTB.length;
+  renderExpRows('wtsRows',expWTS);renderExpRows('wtbRows',expWTB);
+}
+function renderExpRows(id,list){
+  const el=document.getElementById(id);
+  if(!list.length){el.innerHTML='<div class="empty">No results</div>';return;}
+  el.innerHTML=list.map(l=>{
+    const country=l.sellerCountry||l.listingCountry||'';
+    const flag=FLAGS[country]||'';
+    const specs=[l.storage,l.ram,l.color,l.grade?'Grade '+l.grade:null].filter(Boolean).join(' · ');
+    const priceStr=l.price?(l.currency==='AED'?'AED ':'$')+l.price.toLocaleString():'—';
+    return`<div class="exp-row">
+      <div class="exp-av">${(l.sender||'?')[0].toUpperCase()}</div>
+      <div class="exp-info"><div class="exp-name">${esc(l.model||'Unknown')}</div><div class="exp-phone">📱 +${esc(l.sender||'?')}</div><div class="exp-detail">${flag} ${esc(country)}${specs?' · '+esc(specs):''}</div></div>
+      <div class="exp-price">${priceStr}</div>
+    </div>`;
+  }).join('');
+}
+function exportXLSX(which){
+  if(!window.XLSX){toast('⚠️ Excel library loading...');return;}
+  const q=document.getElementById('expSearch').value.trim()||'All';
+  const wb=XLSX.utils.book_new();
+  const c=(ws)=>ws.map(w=>({wch:w}));
+  if(which==='wts'||which==='both'||which==='report'){
+    if(!expWTS.length&&which==='wts'){toast('No sellers');return;}
+    const data=[['#','Sender','Phone','WhatsApp Link','Model','Storage','RAM','Color','Condition','Grade','Qty','Price','Currency','Country','Status','Score','Assigned To','Group','Message'],...expWTS.map((l,i)=>[i+1,l.sender||'','+'+(l.sender||''),l.sender?'https://wa.me/'+l.sender:'',l.model||'',l.storage||'',l.ram||'',l.color||'',l.condition||'',l.grade||'',l.qty||'',l.price||'',l.currency||'',l.sellerCountry||l.listingCountry||'',l.status||'new',l.dealScore||'',l.assignedTo||'',l.group||'',l.summary||''])];
+    const ws=XLSX.utils.aoa_to_sheet(data);ws['!cols']=c([5,18,16,32,20,10,8,14,12,8,6,10,8,14,12,6,16,18,40]);
+    XLSX.utils.book_append_sheet(wb,ws,'WTS Sellers');
+  }
+  if(which==='wtb'||which==='both'||which==='report'){
+    if(!expWTB.length&&which==='wtb'){toast('No buyers');return;}
+    const data=[['#','Sender','Phone','WhatsApp Link','Item Wanted','Storage','Color','Condition','Grade','Qty','Budget','Currency','Country','Status','Score','Group','Message'],...expWTB.map((l,i)=>[i+1,l.sender||'','+'+(l.sender||''),l.sender?'https://wa.me/'+l.sender:'',l.model||'',l.storage||'',l.color||'',l.condition||'',l.grade||'',l.qty||'',l.price||'',l.currency||'',l.sellerCountry||l.listingCountry||'',l.status||'new',l.dealScore||'',l.group||'',l.summary||''])];
+    const ws=XLSX.utils.aoa_to_sheet(data);ws['!cols']=c([5,18,16,32,20,10,14,12,12,6,10,8,14,12,6,18,40]);
+    XLSX.utils.book_append_sheet(wb,ws,'WTB Buyers');
+  }
+  if(which==='report'){
+    const models={};S.listings.forEach(l=>{if(!l.model)return;if(!models[l.model])models[l.model]={wts:0,wtb:0,prices:[]};if(l.type==='WTS')models[l.model].wts++;else models[l.model].wtb++;if(l.price)models[l.model].prices.push(l.price);});
+    const data=[['Model','WTS','WTB','Demand Ratio','Min Price','Avg Price','Max Price','Signal'],...Object.entries(models).sort((a,b)=>(b[1].wts+b[1].wtb)-(a[1].wts+a[1].wtb)).map(([m,d])=>{const p=d.prices.sort((a,b)=>a-b);const avg=p.length?Math.round(p.reduce((a,b)=>a+b,0)/p.length):null;const r=(d.wtb/Math.max(d.wts,1)).toFixed(2);return[m,d.wts,d.wtb,r,p[0]||'',avg||'',p[p.length-1]||'',r>1.5?'🔥 HIGH DEMAND':r<0.5?'📦 OVERSUPPLIED':'✅ BALANCED'];})];
+    const ws=XLSX.utils.aoa_to_sheet(data);ws['!cols']=c([22,8,8,12,12,12,12,16]);
+    XLSX.utils.book_append_sheet(wb,ws,'Market Report');
+  }
+  const fname='WA_Trading_'+q.replace(/\s+/g,'_')+'_'+new Date().toISOString().slice(0,10)+'.xlsx';
+  XLSX.writeFile(wb,fname);toast('📥 Exported: '+fname);
+}
+
+// ── SETTINGS ──
+function saveSettings(){
+  const t=document.getElementById('cfgToken').value.trim();
+  if(!t){toast('Enter token');return;}
+  localStorage.setItem('wa_whapi',t);
+  startLive();toast('✅ Saved!');
+}
+function copyWh(){navigator.clipboard.writeText(location.origin+'/webhook').then(()=>toast('✅ Copied!'));}
+function clearAll(){S.listings=[];S.traders={};lastTs=0;localStorage.removeItem('wa_watch');updateAll();toast('Cleared');}
+
+// ── UPDATE ALL ──
+function updateAll(){
+  renderFeed();renderKPIs();renderDonut();renderBars();renderMarket();
+  renderTraders();renderWatchlist();renderExport();renderAlerts();renderTeam();
+  document.getElementById('cfgCount').textContent=S.listings.length;
+}
+
+// ── TABS ──
+function showTab(id,btn){
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('pane-'+id).classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(id==='margin'){renderAlerts();renderSnaps();}
+}
+
+// ── MODALS ──
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+// ── DEMO ──
+function loadDemo(){
+  const now=Math.floor(Date.now()/1000);
+  const items=[
+    {type:'WTS',condition:'Brand New',model:'iPhone 16 Pro Max',storage:'256GB',ram:null,color:'Black Titanium',qty:1,grade:null,price:4200,currency:'AED',summary:'WTS iPhone 16 Pro Max 256GB Black Titanium BN sealed',sender:'971501234567',sellerCountry:'UAE',listingCountry:'UAE',group:'GSMFEED ME',timestamp:now-60,id:'d1',dealScore:9,isFlagged:false,scoreReason:'Great price vs market avg',status:'new'},
+    {type:'WTB',condition:'Brand New',model:'iPhone 16 Pro Max',storage:'256GB',ram:null,color:null,qty:5,grade:null,price:1350,currency:'USD',summary:'WTB iPhone 16 Pro Max 256GB BN 5 units UAE buyer',sender:'966501111111',sellerCountry:'Saudi Arabia',listingCountry:'Saudi Arabia',group:'GSMFEED ME',timestamp:now-180,id:'d2',dealScore:null,isFlagged:false,status:'contacted'},
+    {type:'WTB',condition:'Brand New',model:'iPhone 16 Pro Max',storage:'512GB',ram:null,color:null,qty:3,grade:null,price:1500,currency:'USD',summary:'WTB iPhone 16 Pro Max 512GB BN 3 units urgent Kuwait',sender:'965501111111',sellerCountry:'Kuwait',listingCountry:'Kuwait',group:'Gulf Traders',timestamp:now-300,id:'d3',dealScore:null,isFlagged:false,status:'new'},
+    {type:'WTS',condition:'Used',model:'Samsung Galaxy S24 Ultra',storage:'512GB',ram:'12GB',color:'Titanium Gray',qty:2,grade:'A',price:800,currency:'USD',summary:'WTS Samsung S24 Ultra 512GB 12GB Grade A used 2 units',sender:'966502222222',sellerCountry:'Saudi Arabia',listingCountry:'Saudi Arabia',group:'Gulf Traders',timestamp:now-500,id:'d4',dealScore:7,isFlagged:false,scoreReason:'Fair market price',status:'new'},
+    {type:'WTS',condition:'Brand New',model:'MacBook Pro M4',storage:'512GB',ram:'16GB',color:'Space Black',qty:1,grade:null,price:1800,currency:'USD',summary:'WTS MacBook Pro M4 14" 512GB 16GB Space Black BN',sender:'971521234567',sellerCountry:'UAE',listingCountry:'UAE',group:'GSMFEED ME',timestamp:now-700,id:'d5',dealScore:8,isFlagged:false,scoreReason:'Competitive price',status:'negotiating'},
+    {type:'WTS',condition:'Used',model:'iPhone 13',storage:'128GB',ram:null,color:'Red',qty:20,grade:'B+',price:450,currency:'USD',summary:'WTS iPhone 13 128GB Red Grade B+ lot 20 units $450 each',sender:'971561234567',sellerCountry:'UAE',listingCountry:'UAE',group:'GSMFEED ME',timestamp:now-900,id:'d6',dealScore:5,isFlagged:false,status:'new'},
+    {type:'WTS',condition:'Brand New',model:'iPad Pro 13 M4',storage:'256GB',ram:'8GB',color:'Space Gray',qty:3,grade:null,price:1100,currency:'USD',summary:'WTS iPad Pro 13 M4 256GB BN sealed 3 units Kuwait',sender:'965501234567',sellerCountry:'Kuwait',listingCountry:'Kuwait',group:'Gulf Traders',timestamp:now-1200,id:'d7',dealScore:8,isFlagged:false,status:'done'},
+    {type:'WTS',condition:'Used',model:'Samsung Galaxy S23',storage:'256GB',ram:'8GB',color:'Phantom Black',qty:5,grade:'C',price:280,currency:'USD',summary:'WTS Samsung S23 256GB 8GB Grade C 5 units Jordan',sender:'962799999999',sellerCountry:'Jordan',listingCountry:'Jordan',group:'Middle East Phones',timestamp:now-1500,id:'d8',dealScore:3,isFlagged:true,flagReason:'Price too low vs market — possible defective stock',status:'pass'},
+    {type:'WTB',condition:'Brand New',model:'iPhone 16 Pro Max',storage:'512GB',ram:null,color:'White',qty:8,grade:null,price:null,currency:null,summary:'WTB iPhone 16 Pro Max 512GB White BN 8 units Jordan',sender:'962791234567',sellerCountry:'Jordan',listingCountry:'Jordan',group:'Middle East Phones',timestamp:now-2000,id:'d9',dealScore:null,isFlagged:false,status:'new'},
+    {type:'WTS',condition:'Used',model:'Apple Watch Ultra 2',storage:null,ram:null,color:'Titanium',qty:1,grade:'A+',price:700,currency:'USD',summary:'WTS Apple Watch Ultra 2 Titanium Grade A+ $700 Bahrain',sender:'97331234567',sellerCountry:'Bahrain',listingCountry:'Bahrain',group:'Gulf Traders',timestamp:now-2500,id:'d10',dealScore:9,isFlagged:false,scoreReason:'Excellent price, Grade A+',status:'contacted'},
+    {type:'WTB',condition:'Brand New',model:'MacBook Pro M4',storage:'512GB',ram:'16GB',color:null,qty:2,grade:null,price:1800,currency:'USD',summary:'WTB MacBook Pro M4 512GB 16GB BN 2 units Qatar',sender:'974501234567',sellerCountry:'Qatar',listingCountry:'Qatar',group:'Gulf Traders',timestamp:now-3000,id:'d11',dealScore:null,isFlagged:false,status:'new'},
+    {type:'WTS',condition:'Used',model:'iPhone 14 Pro',storage:'256GB',ram:null,color:'Deep Purple',qty:3,grade:'A',price:550,currency:'USD',summary:'WTS iPhone 14 Pro 256GB Deep Purple Grade A 3 units Oman',sender:'968951234567',sellerCountry:'Oman',listingCountry:'Oman',group:'Middle East Phones',timestamp:now-3500,id:'d12',dealScore:7,isFlagged:false,status:'new'},
+    {type:'WTB',condition:'Used',model:'Samsung Galaxy S24 Ultra',storage:'256GB',ram:null,color:null,qty:5,grade:'B',price:600,currency:'USD',summary:'WTB Samsung S24 Ultra 256GB used Grade B 5 units Egypt',sender:'201234567890',sellerCountry:'Egypt',listingCountry:'Egypt',group:'Gulf Traders',timestamp:now-4000,id:'d13',dealScore:null,isFlagged:false,status:'new'},
+    {type:'WTS',condition:'Brand New',model:'iPhone 15 Pro',storage:'128GB',ram:null,color:'Natural Titanium',qty:10,grade:null,price:950,currency:'USD',summary:'WTS iPhone 15 Pro 128GB Natural Titanium BN 10 units UAE',sender:'971509876543',sellerCountry:'UAE',listingCountry:'UAE',group:'GSMFEED ME',timestamp:now-4500,id:'d14',dealScore:6,isFlagged:false,status:'new'},
+    {type:'WTS',condition:'Used',model:'iPhone 12 Pro Max',storage:'256GB',ram:null,color:'Pacific Blue',qty:15,grade:'B',price:350,currency:'USD',summary:'WTS iPhone 12 Pro Max 256GB Pacific Blue Grade B lot 15 units',sender:'923001234567',sellerCountry:'Pakistan',listingCountry:'Pakistan',group:'Middle East Phones',timestamp:now-5000,id:'d15',dealScore:6,isFlagged:false,status:'new'},
+  ];
+  S.team=[{email:'ahmed@protech.ae',name:'Ahmed Al Yousif',role:'admin',company:'Pro Tech Trading FZCO'},{email:'sara@protech.ae',name:'Sara Mohammed',role:'member',company:'Pro Tech Trading FZCO'},{email:'khalid@protech.ae',name:'Khalid Hassan',role:'member',company:'Pro Tech Trading FZCO'}];
+  items.forEach(addListing);
+  S.alerts=[{model:'iPhone 16 Pro Max',targetPrice:1200,email:'demo@wa-trading.com',active:true},{model:'MacBook Pro M4',targetPrice:1700,email:'demo@wa-trading.com',active:true}];
+  // Demo channels
+  localChannels=[
+    {id:'ch_demo1',label:'UAE Trading Number (+971)',token:'demo-token-1',active:true,groups:{
+      'g1':{id:'g1',name:'GSMFEED Middle East',participants:234,enabled:true,messageCount:87},
+      'g2':{id:'g2',name:'Gulf Traders',participants:156,enabled:true,messageCount:63},
+      'g3':{id:'g3',name:'Family Group',participants:12,enabled:false,messageCount:5},
+      'g4':{id:'g4',name:'Work Chat',participants:8,enabled:false,messageCount:2},
+    }},
+    {id:'ch_demo2',label:'KSA Trading Number (+966)',token:'demo-token-2',active:true,groups:{
+      'g5':{id:'g5',name:'Middle East Phones',participants:312,enabled:true,messageCount:145},
+      'g6':{id:'g6',name:'Saudi Electronics',participants:198,enabled:true,messageCount:92},
+      'g7':{id:'g7',name:'Personal',participants:6,enabled:false,messageCount:1},
+    }},
+  ];
+  renderChannels();
+  updateAll();toast('📊 Demo loaded — 15 listings, 2 numbers, 7 groups');
+}
+
+// ── CHANNEL & GROUP MANAGEMENT ──
+let localChannels = JSON.parse(localStorage.getItem('wa_channels')||'[]');
+
+function saveChannels(){localStorage.setItem('wa_channels',JSON.stringify(localChannels));}
+
+async function addChannel(){
+  const label=document.getElementById('chLabel').value.trim();
+  const token=document.getElementById('chToken').value.trim();
+  if(!label||!token){toast('Enter label and token');return;}
+  const id='ch_'+Date.now();
+  const ch={id,label,token,active:true,groups:{}};
+  localChannels.push(ch);
+  saveChannels();
+  // Register on server
+  try{await api('/api/channels','POST',{id,label,token});}catch{}
+  document.getElementById('chLabel').value='';
+  document.getElementById('chToken').value='';
+  renderChannels();
+  toast('✅ Channel added: '+label);
+}
+
+async function fetchGroups(chId){
+  const ch=localChannels.find(c=>c.id===chId);
+  if(!ch){toast('Channel not found');return;}
+  toast('⏳ Fetching groups...');
+  try{
+    // Try server-side fetch first
+    const groups=await api('/api/channels/'+chId+'/groups');
+    ch.groups={};
+    groups.forEach(g=>{ch.groups[g.id]={id:g.id,name:g.name,participants:g.participants,enabled:true,messageCount:0};});
+    saveChannels();
+    renderChannels();
+    toast('✅ Found '+groups.length+' groups');
+  }catch{
+    // Fallback: fetch directly from Whapi
+    try{
+      const r=await fetch('https://gate.whapi.cloud/groups?count=100',{headers:{'Authorization':'Bearer '+ch.token}});
+      const data=await r.json();
+      const groups=data.groups||[];
+      ch.groups={};
+      groups.forEach(g=>{ch.groups[g.id]={id:g.id,name:g.name||g.subject||g.id,participants:g.participants_count||0,enabled:true,messageCount:0};});
+      saveChannels();
+      renderChannels();
+      toast('✅ Found '+groups.length+' groups');
+    }catch(e){toast('⚠️ Could not fetch groups: '+e.message);}
+  }
+}
+
+async function toggleChannel(chId){
+  const ch=localChannels.find(c=>c.id===chId);
+  if(!ch) return;
+  ch.active=!ch.active;
+  saveChannels();
+  try{await api('/api/channels/'+chId+'/toggle','PATCH');}catch{}
+  renderChannels();
+  toast(ch.active?'✅ Channel enabled':'⏸ Channel disabled');
+}
+
+async function deleteChannel(chId){
+  if(!confirm('Remove this WhatsApp number?')) return;
+  localChannels=localChannels.filter(c=>c.id!==chId);
+  saveChannels();
+  try{await api('/api/channels/'+chId,'DELETE');}catch{}
+  renderChannels();
+  toast('🗑 Channel removed');
+}
+
+async function toggleGroup(chId,groupId,enabled){
+  const ch=localChannels.find(c=>c.id===chId);
+  if(!ch||!ch.groups[groupId]) return;
+  ch.groups[groupId].enabled=enabled;
+  saveChannels();
+  try{await api('/api/channels/'+chId+'/groups/'+groupId,'PATCH',{enabled});}catch{}
+}
+
+async function toggleAllGroups(chId,enabled){
+  const ch=localChannels.find(c=>c.id===chId);
+  if(!ch) return;
+  Object.keys(ch.groups).forEach(gId=>{ch.groups[gId].enabled=enabled;});
+  saveChannels();
+  try{await api('/api/channels/'+chId+'/groups','PUT',{groups:Object.keys(ch.groups).map(id=>({id,enabled}))});}catch{}
+  renderChannels();
+  toast(enabled?'✅ All groups enabled':'⏸ All groups disabled');
+}
+
+function renderChannels(){
+  const el=document.getElementById('channelsList');
+  if(!localChannels.length){
+    el.innerHTML='<div class="sec"><div class="empty"><span class="empty-icon">📱</span>No WhatsApp numbers added yet<br><span style="font-size:10px">Add your first number above</span></div></div>';
+    return;
+  }
+  el.innerHTML=localChannels.map(ch=>{
+    const groups=Object.values(ch.groups||{});
+    const enabled=groups.filter(g=>g.enabled).length;
+    const webhookUrl=location.origin+'/webhook?channel='+ch.id;
+    const groupsHtml=groups.length?groups.map(g=>`
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <div class="toggle-name">${esc(g.name)}</div>
+          <div class="toggle-meta">${g.participants?g.participants+' members · ':''} ${g.messageCount||0} msgs</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" ${g.enabled?'checked':''} onchange="toggleGroup('${ch.id}','${g.id}',this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>`).join('')
+    :'<div class="empty" style="padding:16px">No groups yet — click Fetch Groups</div>';
+
+    return`<div class="ch-card">
+      <div class="ch-header">
+        <div class="ch-icon">${ch.active?'📱':'⏸'}</div>
+        <div class="ch-info">
+          <div class="ch-label">${esc(ch.label)}</div>
+          <div class="ch-token">${groups.length?enabled+'/'+groups.length+' groups enabled':'No groups fetched yet'} · ${ch.active?'Active':'Paused'}</div>
+        </div>
+        <div class="ch-actions">
+          <button class="ch-btn primary" onclick="fetchGroups('${ch.id}')">🔄 Fetch Groups</button>
+          <button class="ch-btn muted" onclick="toggleChannel('${ch.id}')">${ch.active?'Pause':'Enable'}</button>
+          <button class="ch-btn danger" onclick="deleteChannel('${ch.id}')">✕</button>
+        </div>
+      </div>
+      <!-- WEBHOOK URL -->
+      <div style="padding:8px 14px;border-bottom:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <span style="font-family:var(--mono);font-size:9px;color:var(--accent);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${webhookUrl}</span>
+        <button class="cp-btn" onclick="navigator.clipboard.writeText('${webhookUrl}').then(()=>toast('✅ Copied!'))">COPY</button>
+      </div>
+      <!-- GROUPS TOGGLE -->
+      ${groups.length?`<div style="padding:8px 14px;border-bottom:1px solid var(--border);display:flex;gap:6px">
+        <button class="ch-btn primary" onclick="toggleAllGroups('${ch.id}',true)" style="font-size:8px">Enable All</button>
+        <button class="ch-btn muted" onclick="toggleAllGroups('${ch.id}',false)" style="font-size:8px">Disable All</button>
+        <span style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-left:auto;align-self:center">${enabled}/${groups.length} active</span>
+      </div>`:''}
+      <!-- GROUP LIST -->
+      <div style="max-height:280px;overflow-y:auto;-webkit-overflow-scrolling:touch">${groupsHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+// Load saved channels on start
+function initChannels(){
+  renderChannels();
+  // Sync to server
+  localChannels.forEach(ch=>{
+    api('/api/channels','POST',{id:ch.id,label:ch.label,token:ch.token}).catch(()=>{});
+  });
+}
+
+// ── UTILS ──
+function setPill(cls,lbl){const p=document.getElementById('pill');p.className='pill '+cls;p.textContent=lbl;}
+function timeAgo(d){if(!d)return'';const s=Math.floor((Date.now()-d)/1000);if(s<60)return s+'s ago';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return d.toLocaleDateString();}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function toast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000);}
+</script>
+</body>
+</html>
