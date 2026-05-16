@@ -2,12 +2,13 @@
  * WA Trading Intelligence Platform — Full Production Backend
  * MongoDB + JWT Auth + AI Scoring + Team Features + Price Alerts
  */
-
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const crypto = require('crypto');
 const app = express();
+
 
 app.use(cors());
 app.use(express.json());
