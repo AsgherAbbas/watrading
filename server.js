@@ -17,11 +17,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ── ENV ──
 const CLAUDE_KEY  = process.env.CLAUDE_API_KEY || '';
 const MONGO_URI   = process.env.MONGO_URI || 'mongodb://abbasasghar7212_db_user:2OmsSUmsMvAWm7nz@ac-zicjk9h-shard-00-00.1vf27mu.mongodb.net:27017,ac-zicjk9h-shard-00-01.1vf27mu.mongodb.net:27017,ac-zicjk9h-shard-00-02.1vf27mu.mongodb.net:27017/?ssl=true&replicaSet=atlas-arq0vt-shard-0&authSource=admin&appName=Cluster1';
-const MONGO_URI   = process.env.MONGO_URI || '';
 const JWT_SECRET  = process.env.JWT_SECRET || 'wa-trading-secret-2024';
 const PORT        = process.env.PORT || 3000;
 
-// ── IN-MEMORY FALLBACK (used if no MongoDB) ──
 const mem = {
   users: [],
   listings: [],
