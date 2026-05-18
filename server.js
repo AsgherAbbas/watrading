@@ -9,7 +9,6 @@ const path = require('path');
 const crypto = require('crypto');
 const app = express();
 
-
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -20,6 +19,7 @@ const MONGO_URI   = process.env.MONGO_URI || '';
 const JWT_SECRET  = process.env.JWT_SECRET || 'wa-trading-secret-2024';
 const PORT        = process.env.PORT || 3000;
 
+// ── IN-MEMORY FALLBACK (used if no MongoDB) ──
 const mem = {
   users: [],
   listings: [],
@@ -120,10 +120,19 @@ function getOrCreateChannel(channelId, label='') {
 
 function isGroupAllowed(channelId, groupId) {
   const ch = channels[channelId];
-  if (!ch) return true; // unknown channel — allow
-  const grp = ch.groups[groupId];
-  if (!grp) return true; // new group not yet configured — allow by default
-  return grp.enabled !== false; // default allow
+  if (!ch) return true; // unknown channel — allow all
+  const groupKeys = Object.keys(ch.groups || {});
+  if (groupKeys.length === 0) return true; // no groups configured yet — allow all
+  // Try exact match first
+  if (ch.groups[groupId] !== undefined) {
+    return ch.groups[groupId].enabled !== false;
+  }
+  // Try matching without @g.us suffix
+  const cleanId = groupId.replace('@g.us','').replace('@s.whatsapp.net','');
+  const match = groupKeys.find(k => k.replace('@g.us','').replace('@s.whatsapp.net','') === cleanId);
+  if (match) return ch.groups[match].enabled !== false;
+  // Group not in list — allow by default (will be tracked)
+  return true;
 }
 
 function trackGroup(channelId, groupId, groupName, msgCount=1) {
@@ -186,7 +195,21 @@ app.get('/health', async (req, res) => {
   res.json({ status: 'ok', listings: count, db: db ? 'mongodb' : 'memory' });
 });
 
-// ── AUTH ROUTES ──
+// DEBUG ENDPOINT (no auth needed)
+app.get('/api/debug', async (req, res) => {
+  const count = await DB.countListings();
+  res.json({
+    claudeKey: CLAUDE_KEY ? 'SET' : 'MISSING - messages will not appear without this',
+    db: db ? 'MongoDB' : 'Memory',
+    listingsTotal: count,
+    rawMessagesReceived: mem.rawMessages.length,
+    lastMessages: mem.rawMessages.slice(0,5).map(m=>({text:m.text&&m.text.slice(0,60),sender:m.sender,group:m.group})),
+    recentListings: mem.listings.slice(0,3).map(l=>({type:l.type,model:l.model,price:l.price})),
+    channels: Object.keys(channels),
+  });
+});
+
+// AUTH ROUTES
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { email, password, name, company } = req.body;
@@ -241,7 +264,11 @@ app.post('/webhook', async (req, res) => {
     mem.rawMessages.unshift({ text, sender, group, groupName, channelId, ts });
     if (mem.rawMessages.length > 200) mem.rawMessages.pop();
     const lower = text.toLowerCase();
-    const isTrading = ['wts','wtb','selling','buying','for sale','looking for','aed','usd','offer','grade','brand new','used'].some(k => lower.includes(k));
+    const tradingKeywords = ['wts','wtb','selling','buying','for sale','looking for',
+      'aed','usd','offer','grade','brand new','used','iphone','samsung','ipad',
+      'macbook','pixel','للبيع','مطلوب','بيع','شراء','sale','available','price',
+      'refurb','wholesale','bulk','units','pcs','pieces'];
+    const isTrading = tradingKeywords.some(k => lower.includes(k));
     if (!isTrading) continue;
     const classified = await classifyMessage(text, sender);
     if (!classified || classified.type === 'UNKNOWN') continue;
@@ -523,12 +550,43 @@ app.get('/api/report', authMiddleware, async (req, res) => {
 
 // ── FALLBACK CLASSIFIER ──
 function fallback(text) {
-  const l=text.toLowerCase();
-  const type=l.includes('wts')||l.includes('selling')||l.includes('for sale')?'WTS':l.includes('wtb')||l.includes('looking')||l.includes('buying')?'WTB':'UNKNOWN';
-  const pm=text.match(/(\d[\d,]{2,})/);
-  const isUsed=l.includes('used')||l.includes('grade');
-  const gm=text.match(/grade\s*([ABC][+]?)/i);
-  return { type, condition:isUsed?'Used':'Brand New', model:null, storage:null, ram:null, color:null, qty:null, grade:isUsed&&gm?gm[1].toUpperCase():null, price:pm?parseInt(pm[1].replace(/,/g,'')):null, currency:'USD', country:null, summary:text.slice(0,80) };
+  const l = text.toLowerCase();
+  // Expanded WTS detection
+  const isWTS = l.includes('wts') || l.includes('selling') || l.includes('for sale') || 
+                l.includes('للبيع') || l.includes('sale') || l.includes('sell') ||
+                l.includes('available') || l.includes('offer') || l.includes('price');
+  // Expanded WTB detection  
+  const isWTB = l.includes('wtb') || l.includes('looking for') || l.includes('buying') || 
+                l.includes('wanted') || l.includes('need') || l.includes('want to buy') ||
+                l.includes('looking to buy') || l.includes('wt buy');
+  const type = isWTS ? 'WTS' : isWTB ? 'WTB' : 'UNKNOWN';
+  const pm = text.match(/(\d[\d,]{2,})/);
+  const isUsed = l.includes('used') || l.includes('grade') || l.includes('refurb') || l.includes('second hand');
+  const gm = text.match(/grade\s*([ABC][+]?)/i);
+  // Extract model hints
+  const modelPatterns = [
+    /iphone\s*\d+\s*(pro\s*max|pro|plus|mini)?/i,
+    /samsung\s*(galaxy)?\s*[a-z]?\d+\s*(ultra|plus|fe)?/i,
+    /ipad\s*(pro|air|mini)?\s*\d*/i,
+    /macbook\s*(pro|air|mini)?/i,
+    /pixel\s*\d+\s*(pro|a)?/i,
+  ];
+  let model = null;
+  for (const p of modelPatterns) {
+    const m = text.match(p);
+    if (m) { model = m[0].trim(); break; }
+  }
+  return { 
+    type, 
+    condition: isUsed ? 'Used' : 'Brand New', 
+    model, 
+    storage: null, ram: null, color: null, qty: null, 
+    grade: isUsed && gm ? gm[1].toUpperCase() : null, 
+    price: pm ? parseInt(pm[1].replace(/,/g,'')) : null, 
+    currency: l.includes('aed') ? 'AED' : l.includes('sar') || l.includes('ريال') ? 'SAR' : 'USD', 
+    country: null, 
+    summary: text.slice(0,80) 
+  };
 }
 
 function topN(obj, n) {
