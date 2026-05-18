@@ -19,7 +19,6 @@
   --mono:'Space Mono',monospace;--display:'Syne',sans-serif;
   --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);
 }
-/* Base font size boost for iPhone readability */
 html{font-size:16px;-webkit-text-size-adjust:100%;}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden}
@@ -33,9 +32,6 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .auth-icon{width:40px;height:40px;background:var(--accent);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px}
 .auth-logo h1{font-size:20px;font-weight:800}.auth-logo h1 span{color:var(--accent)}
 .auth-sub{color:var(--muted);font-size:12px;margin-bottom:24px;line-height:1.5}
-.auth-tabs{display:flex;gap:0;margin-bottom:20px;background:var(--surface2);border-radius:8px;padding:3px}
-.auth-tab{flex:1;padding:8px;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);border:none;background:transparent;cursor:pointer;border-radius:6px;transition:all .2s}
-.auth-tab.active{background:var(--accent);color:var(--bg);font-weight:700}
 .fi{margin-bottom:12px}
 .fi label{display:block;font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
 .fi input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;-webkit-appearance:none;transition:border-color .2s}
@@ -301,31 +297,19 @@ header{padding-top:var(--st);background:rgba(8,12,16,.97);backdrop-filter:blur(1
 </head>
 <body>
 
-<!-- AUTH SCREEN -->
+<!-- AUTH SCREEN - ONLY LOGIN + DEMO MODE -->
 <div id="authScreen">
   <div class="auth-card">
     <div class="auth-logo"><div class="auth-icon">📱</div><h1>WA <span>Trading</span></h1></div>
     <p class="auth-sub">Business intelligence platform for electronics wholesale traders.</p>
-    <div class="auth-tabs">
-      <button class="auth-tab active" onclick="switchAuth('login',this)">Login</button>
-      <!-- <button class="auth-tab" onclick="switchAuth('register',this)">Register</button> -->
-    </div>
-    <!-- LOGIN -->
+    
+    <!-- LOGIN ONLY - NO REGISTER -->
     <div id="loginForm">
       <div class="fi"><label>Email</label><input type="email" id="loginEmail" placeholder="your@email.com"></div>
       <div class="fi"><label>Password</label><input type="password" id="loginPw" placeholder="Password"></div>
       <button class="btn-p" onclick="doLogin()">Login</button>
-      <button class="btn-d" onclick="demoMode()">👁️ Demo Mode (no account)</button>
+      <button class="btn-d" onclick="demoMode()">👁️ Demo Mode (no account needed)</button>
       <div class="auth-err" id="loginErr"></div>
-    </div>
-    <!-- REGISTER -->
-    <div id="registerForm" style="display:none">
-      <div class="fi"><label>Full Name</label><input type="text" id="regName" placeholder="Ahmed Al Yousif"></div>
-      <div class="fi"><label>Company</label><input type="text" id="regCompany" placeholder="Pro Tech Trading FZCO"></div>
-      <div class="fi"><label>Email</label><input type="email" id="regEmail" placeholder="your@email.com"></div>
-      <div class="fi"><label>Password</label><input type="password" id="regPw" placeholder="Min 6 characters"></div>
-      <button class="btn-p" onclick="doRegister()">Create Account</button>
-      <div class="auth-err" id="regErr"></div>
     </div>
   </div>
 </div>
@@ -561,10 +545,12 @@ header{padding-top:var(--st);background:rgba(8,12,16,.97);backdrop-filter:blur(1
           1. Add your number above with its Whapi token<br>
           2. Each number gets a <b>unique webhook URL</b> shown below<br>
           3. In Whapi → Settings → Webhooks → paste that URL<br>
-          4. Click <b>Fetch Groups</b> to load your groups<br>
-          5. Toggle groups ON/OFF to control what gets tracked<br><br>
+          4. Make sure <b>Persistent Webhook</b> is ON<br>
+          5. Click <b>Fetch Groups</b> to load your groups<br>
+          6. Toggle groups ON/OFF to control what gets tracked<br><br>
           <b>Multiple numbers:</b> Repeat for each WhatsApp number.<br>
-          All feed into the same dashboard.
+          All feed into the same dashboard.<br><br>
+          <b>⚠️ Important:</b> Channels are saved in MongoDB, so they persist after server restarts!
         </div>
       </div>
     </div>
@@ -581,15 +567,10 @@ header{padding-top:var(--st);background:rgba(8,12,16,.97);backdrop-filter:blur(1
       <div class="sr" style="border-bottom:none"><button class="logout-btn" onclick="logout()">🚪 Logout</button></div>
     </div>
     <div class="ss">
-      <div class="ss-t">WhatsApp Connection</div>
-      <div class="sr"><div class="sl">Whapi.Cloud Token</div><input class="si2" type="password" id="cfgToken" placeholder="Your token..."></div>
-      <div class="sr" style="border-bottom:none"><button class="sv-btn" onclick="saveSettings()">Save & Connect</button></div>
-    </div>
-    <div class="ss">
       <div class="ss-t">Webhook URL — paste in Whapi</div>
       <div class="sr" style="border-bottom:none">
         <div class="wh-box"><span class="wh-url" id="whUrl">Loading...</span><button class="cp-btn" onclick="copyWh()">COPY</button></div>
-        <div style="font-size:10px;color:var(--muted);margin-top:8px;line-height:1.7">Whapi → Settings → Webhooks → paste above<br>Enable: <strong style="color:var(--text)">messages.upsert</strong></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:8px;line-height:1.7">Whapi → Settings → Webhooks → paste above<br>Enable: <strong style="color:var(--text)">Persistent Webhook = ON</strong><br>No need to select events manually!</div>
       </div>
     </div>
     <div class="ss">
@@ -662,14 +643,7 @@ async function validateToken(){
   }catch{localStorage.removeItem('wa_token');S.token='';}
 }
 
-// ── AUTH ──
-function switchAuth(mode,btn){
-  document.querySelectorAll('.auth-tab').forEach(t=>t.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('loginForm').style.display=mode==='login'?'block':'none';
-  document.getElementById('registerForm').style.display=mode==='register'?'block':'none';
-}
-
+// ── AUTH (LOGIN ONLY) ──
 async function doLogin(){
   const email=document.getElementById('loginEmail').value.trim();
   const pw=document.getElementById('loginPw').value;
@@ -684,23 +658,6 @@ async function doLogin(){
   }catch(e){document.getElementById('loginErr').textContent=e.message;}
 }
 
-async function doRegister(){
-  const name=document.getElementById('regName').value.trim();
-  const company=document.getElementById('regCompany').value.trim();
-  const email=document.getElementById('regEmail').value.trim();
-  const pw=document.getElementById('regPw').value;
-  document.getElementById('regErr').textContent='';
-  if(pw.length<6){document.getElementById('regErr').textContent='Password min 6 characters';return;}
-  try{
-    const r=await fetch('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,company,email,password:pw})});
-    const d=await r.json();
-    if(!r.ok) throw new Error(d.error);
-    S.token=d.token;S.user=d.user;
-    localStorage.setItem('wa_token',d.token);
-    enterApp();
-  }catch(e){document.getElementById('regErr').textContent=e.message;}
-}
-
 function demoMode(){
   S.isDemo=true;S.user={name:'Demo User',email:'demo@wa-trading.com',role:'admin'};
   document.getElementById('authScreen').style.display='none';
@@ -711,19 +668,13 @@ function demoMode(){
 function enterApp(){
   document.getElementById('authScreen').style.display='none';
   setupUI();startLive();loadTeam();
-  initChannels(); // Restores saved channels & tokens automatically
+  initChannels();
 }
 
 function setupUI(){
   if(S.user){
     document.getElementById('userBadge').textContent='👤 '+S.user.name.split(' ')[0];
     document.getElementById('settingsUser').textContent=S.user.name+' ('+S.user.role+')';
-  }
-  // Restore saved Whapi token in settings field
-  const savedToken = localStorage.getItem('wa_whapi');
-  if(savedToken){
-    const field = document.getElementById('cfgToken');
-    if(field) field.value = savedToken;
   }
   checkHealth();
 }
@@ -764,9 +715,7 @@ async function poll(){
       msgs.reverse().forEach(addListing);
       updateAll();
     }
-  }catch(e){
-    // Silent fail - keep polling
-  }
+  }catch(e){}
 }
 
 // ── ADD LISTING ──
@@ -1003,7 +952,6 @@ function renderTeam(){
     <div class="team-info"><div class="team-name">${esc(m.name)}</div><div class="team-email">${esc(m.email)}${m.company?' · '+esc(m.company):''}</div></div>
     <div class="team-role ${m.role}">${m.role}</div>
   </div>`).join('');
-  // Pipeline counts
   document.getElementById('pipNew').textContent=S.listings.filter(l=>!l.status||l.status==='new').length;
   document.getElementById('pipContacted').textContent=S.listings.filter(l=>l.status==='contacted').length;
   document.getElementById('pipNeg').textContent=S.listings.filter(l=>l.status==='negotiating').length;
@@ -1061,7 +1009,6 @@ function renderKPIs(){
   document.getElementById('kD').textContent=a.filter(l=>l.time&&l.time>=tod).length;
 }
 
-// ── DONUT ──
 function renderDonut(){
   const a=S.listings,tot=a.length;if(!tot)return;
   const wts=a.filter(l=>l.type==='WTS').length,wtb=a.filter(l=>l.type==='WTB').length,nn=a.filter(l=>l.condition==='Brand New').length;
@@ -1075,7 +1022,6 @@ function renderDonut(){
   document.getElementById('pU').textContent=Math.round((tot-nn)/tot*100)+'%';
 }
 
-// ── BARS ──
 function renderBars(){
   const models={},countries={},grades={};
   S.listings.forEach(l=>{if(l.model)models[l.model]=(models[l.model]||0)+1;const c=l.sellerCountry||l.listingCountry;if(c)countries[c]=(countries[c]||0)+1;if(l.grade)grades['Grade '+l.grade]=(grades['Grade '+l.grade]||0)+1;});
@@ -1089,7 +1035,6 @@ function barList(id,obj,color){
   el.innerHTML=s.map(([k,v])=>`<div class="br"><div class="bl" title="${k}">${k}</div><div class="bt"><div class="bf" style="width:${(v/mx*100).toFixed(1)}%;background:${color}"></div></div><div class="bn">${v}</div></div>`).join('');
 }
 
-// ── MARKET ──
 function renderMarket(){
   const models={};
   S.listings.forEach(l=>{if(!l.model)return;if(!models[l.model])models[l.model]={wts:0,wtb:0,prices:[]};if(l.type==='WTS')models[l.model].wts++;else models[l.model].wtb++;if(l.price)models[l.model].prices.push(l.price);});
@@ -1102,7 +1047,6 @@ function renderMarket(){
   document.getElementById('mWanted').textContent=topW?topW[0].split(' ').slice(0,3).join(' '):'—';
   document.getElementById('mSold').textContent=topS?topS[0].split(' ').slice(0,3).join(' '):'—';
   document.getElementById('mOver').textContent=over?over[0].split(' ').slice(0,2).join(' '):'—';
-  // Demand vs supply
   const dEl=document.getElementById('demandList');
   const dS=Object.entries(models).filter(([m,d])=>d.wts+d.wtb>=2).sort((a,b)=>(b[1].wtb/Math.max(b[1].wts,1))-(a[1].wtb/Math.max(a[1].wts,1))).slice(0,10);
   if(!dS.length){dEl.innerHTML='<div class="empty">No data yet</div>';return;}
@@ -1120,7 +1064,6 @@ function renderMarket(){
       <div class="${cls}">${lbl}</div>
     </div>`;
   }).join('');
-  // Price tracker
   const pEl=document.getElementById('priceList');
   const pI=Object.entries(models).filter(([m,d])=>d.prices.length>=2).sort((a,b)=>b[1].prices.length-a[1].prices.length).slice(0,8);
   if(!pI.length){pEl.innerHTML='<div class="empty">Need 2+ priced listings per model</div>';return;}
@@ -1141,7 +1084,6 @@ function renderMarket(){
   }).join('');
 }
 
-// ── TRADERS ──
 function renderTraders(){
   const el=document.getElementById('traderList');
   const s=Object.entries(S.traders).map(([n,d])=>({n,total:d.wts+d.wtb,...d})).sort((a,b)=>b.total-a.total).slice(0,20);
@@ -1157,7 +1099,6 @@ function renderTraders(){
   }).join('');
 }
 
-// ── EXPORT ──
 function renderExport(){
   const q=(document.getElementById('expSearch').value||'').toLowerCase().trim();
   expWTS=S.listings.filter(l=>l.type==='WTS'&&(!q||(l.model||'').toLowerCase().includes(q)||(l.summary||'').toLowerCase().includes(q)));
@@ -1208,25 +1149,15 @@ function exportXLSX(which){
   XLSX.writeFile(wb,fname);toast('📥 Exported: '+fname);
 }
 
-// ── SETTINGS ──
-function saveSettings(){
-  const t=document.getElementById('cfgToken').value.trim();
-  if(!t){toast('Enter token');return;}
-  localStorage.setItem('wa_whapi',t);
-  startLive();
-  toast('✅ Saved! Token remembered permanently.');
-}
 function copyWh(){navigator.clipboard.writeText(location.origin+'/webhook').then(()=>toast('✅ Copied!'));}
 function clearAll(){S.listings=[];S.traders={};lastTs=0;localStorage.removeItem('wa_watch');updateAll();toast('Cleared');}
 
-// ── UPDATE ALL ──
 function updateAll(){
   renderFeed();renderKPIs();renderDonut();renderBars();renderMarket();
   renderTraders();renderWatchlist();renderExport();renderAlerts();renderTeam();
   document.getElementById('cfgCount').textContent=S.listings.length;
 }
 
-// ── TABS ──
 function showTab(id,btn){
   document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
@@ -1235,70 +1166,62 @@ function showTab(id,btn){
   if(id==='margin'){renderAlerts();renderSnaps();}
 }
 
-// ── MODALS ──
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 
-// ── DEMO ──
 function loadDemo(){
   const now=Math.floor(Date.now()/1000);
   const items=[
     {type:'WTS',condition:'Brand New',model:'iPhone 16 Pro Max',storage:'256GB',ram:null,color:'Black Titanium',qty:1,grade:null,price:4200,currency:'AED',summary:'WTS iPhone 16 Pro Max 256GB Black Titanium BN sealed',sender:'971501234567',sellerCountry:'UAE',listingCountry:'UAE',group:'GSMFEED ME',timestamp:now-60,id:'d1',dealScore:9,isFlagged:false,scoreReason:'Great price vs market avg',status:'new'},
     {type:'WTB',condition:'Brand New',model:'iPhone 16 Pro Max',storage:'256GB',ram:null,color:null,qty:5,grade:null,price:1350,currency:'USD',summary:'WTB iPhone 16 Pro Max 256GB BN 5 units UAE buyer',sender:'966501111111',sellerCountry:'Saudi Arabia',listingCountry:'Saudi Arabia',group:'GSMFEED ME',timestamp:now-180,id:'d2',dealScore:null,isFlagged:false,status:'contacted'},
-    {type:'WTB',condition:'Brand New',model:'iPhone 16 Pro Max',storage:'512GB',ram:null,color:null,qty:3,grade:null,price:1500,currency:'USD',summary:'WTB iPhone 16 Pro Max 512GB BN 3 units urgent Kuwait',sender:'965501111111',sellerCountry:'Kuwait',listingCountry:'Kuwait',group:'Gulf Traders',timestamp:now-300,id:'d3',dealScore:null,isFlagged:false,status:'new'},
     {type:'WTS',condition:'Used',model:'Samsung Galaxy S24 Ultra',storage:'512GB',ram:'12GB',color:'Titanium Gray',qty:2,grade:'A',price:800,currency:'USD',summary:'WTS Samsung S24 Ultra 512GB 12GB Grade A used 2 units',sender:'966502222222',sellerCountry:'Saudi Arabia',listingCountry:'Saudi Arabia',group:'Gulf Traders',timestamp:now-500,id:'d4',dealScore:7,isFlagged:false,scoreReason:'Fair market price',status:'new'},
     {type:'WTS',condition:'Brand New',model:'MacBook Pro M4',storage:'512GB',ram:'16GB',color:'Space Black',qty:1,grade:null,price:1800,currency:'USD',summary:'WTS MacBook Pro M4 14" 512GB 16GB Space Black BN',sender:'971521234567',sellerCountry:'UAE',listingCountry:'UAE',group:'GSMFEED ME',timestamp:now-700,id:'d5',dealScore:8,isFlagged:false,scoreReason:'Competitive price',status:'negotiating'},
-    {type:'WTS',condition:'Used',model:'iPhone 13',storage:'128GB',ram:null,color:'Red',qty:20,grade:'B+',price:450,currency:'USD',summary:'WTS iPhone 13 128GB Red Grade B+ lot 20 units $450 each',sender:'971561234567',sellerCountry:'UAE',listingCountry:'UAE',group:'GSMFEED ME',timestamp:now-900,id:'d6',dealScore:5,isFlagged:false,status:'new'},
-    {type:'WTS',condition:'Brand New',model:'iPad Pro 13 M4',storage:'256GB',ram:'8GB',color:'Space Gray',qty:3,grade:null,price:1100,currency:'USD',summary:'WTS iPad Pro 13 M4 256GB BN sealed 3 units Kuwait',sender:'965501234567',sellerCountry:'Kuwait',listingCountry:'Kuwait',group:'Gulf Traders',timestamp:now-1200,id:'d7',dealScore:8,isFlagged:false,status:'done'},
-    {type:'WTS',condition:'Used',model:'Samsung Galaxy S23',storage:'256GB',ram:'8GB',color:'Phantom Black',qty:5,grade:'C',price:280,currency:'USD',summary:'WTS Samsung S23 256GB 8GB Grade C 5 units Jordan',sender:'962799999999',sellerCountry:'Jordan',listingCountry:'Jordan',group:'Middle East Phones',timestamp:now-1500,id:'d8',dealScore:3,isFlagged:true,flagReason:'Price too low vs market — possible defective stock',status:'pass'},
-    {type:'WTB',condition:'Brand New',model:'iPhone 16 Pro Max',storage:'512GB',ram:null,color:'White',qty:8,grade:null,price:null,currency:null,summary:'WTB iPhone 16 Pro Max 512GB White BN 8 units Jordan',sender:'962791234567',sellerCountry:'Jordan',listingCountry:'Jordan',group:'Middle East Phones',timestamp:now-2000,id:'d9',dealScore:null,isFlagged:false,status:'new'},
-    {type:'WTS',condition:'Used',model:'Apple Watch Ultra 2',storage:null,ram:null,color:'Titanium',qty:1,grade:'A+',price:700,currency:'USD',summary:'WTS Apple Watch Ultra 2 Titanium Grade A+ $700 Bahrain',sender:'97331234567',sellerCountry:'Bahrain',listingCountry:'Bahrain',group:'Gulf Traders',timestamp:now-2500,id:'d10',dealScore:9,isFlagged:false,scoreReason:'Excellent price, Grade A+',status:'contacted'},
-    {type:'WTB',condition:'Brand New',model:'MacBook Pro M4',storage:'512GB',ram:'16GB',color:null,qty:2,grade:null,price:1800,currency:'USD',summary:'WTB MacBook Pro M4 512GB 16GB BN 2 units Qatar',sender:'974501234567',sellerCountry:'Qatar',listingCountry:'Qatar',group:'Gulf Traders',timestamp:now-3000,id:'d11',dealScore:null,isFlagged:false,status:'new'},
-    {type:'WTS',condition:'Used',model:'iPhone 14 Pro',storage:'256GB',ram:null,color:'Deep Purple',qty:3,grade:'A',price:550,currency:'USD',summary:'WTS iPhone 14 Pro 256GB Deep Purple Grade A 3 units Oman',sender:'968951234567',sellerCountry:'Oman',listingCountry:'Oman',group:'Middle East Phones',timestamp:now-3500,id:'d12',dealScore:7,isFlagged:false,status:'new'},
-    {type:'WTB',condition:'Used',model:'Samsung Galaxy S24 Ultra',storage:'256GB',ram:null,color:null,qty:5,grade:'B',price:600,currency:'USD',summary:'WTB Samsung S24 Ultra 256GB used Grade B 5 units Egypt',sender:'201234567890',sellerCountry:'Egypt',listingCountry:'Egypt',group:'Gulf Traders',timestamp:now-4000,id:'d13',dealScore:null,isFlagged:false,status:'new'},
-    {type:'WTS',condition:'Brand New',model:'iPhone 15 Pro',storage:'128GB',ram:null,color:'Natural Titanium',qty:10,grade:null,price:950,currency:'USD',summary:'WTS iPhone 15 Pro 128GB Natural Titanium BN 10 units UAE',sender:'971509876543',sellerCountry:'UAE',listingCountry:'UAE',group:'GSMFEED ME',timestamp:now-4500,id:'d14',dealScore:6,isFlagged:false,status:'new'},
-    {type:'WTS',condition:'Used',model:'iPhone 12 Pro Max',storage:'256GB',ram:null,color:'Pacific Blue',qty:15,grade:'B',price:350,currency:'USD',summary:'WTS iPhone 12 Pro Max 256GB Pacific Blue Grade B lot 15 units',sender:'923001234567',sellerCountry:'Pakistan',listingCountry:'Pakistan',group:'Middle East Phones',timestamp:now-5000,id:'d15',dealScore:6,isFlagged:false,status:'new'},
   ];
-  S.team=[{email:'ahmed@protech.ae',name:'Ahmed Al Yousif',role:'admin',company:'Pro Tech Trading FZCO'},{email:'sara@protech.ae',name:'Sara Mohammed',role:'member',company:'Pro Tech Trading FZCO'},{email:'khalid@protech.ae',name:'Khalid Hassan',role:'member',company:'Pro Tech Trading FZCO'}];
+  S.team=[{email:'ahmed@protech.ae',name:'Ahmed Al Yousif',role:'admin',company:'Pro Tech Trading FZCO'}];
   items.forEach(addListing);
-  S.alerts=[{model:'iPhone 16 Pro Max',targetPrice:1200,email:'demo@wa-trading.com',active:true},{model:'MacBook Pro M4',targetPrice:1700,email:'demo@wa-trading.com',active:true}];
-  // Demo channels
-  localChannels=[
-    {id:'ch_demo1',label:'UAE Trading Number (+971)',token:'demo-token-1',active:true,groups:{
-      'g1':{id:'g1',name:'GSMFEED Middle East',participants:234,enabled:true,messageCount:87},
-      'g2':{id:'g2',name:'Gulf Traders',participants:156,enabled:true,messageCount:63},
-      'g3':{id:'g3',name:'Family Group',participants:12,enabled:false,messageCount:5},
-      'g4':{id:'g4',name:'Work Chat',participants:8,enabled:false,messageCount:2},
-    }},
-    {id:'ch_demo2',label:'KSA Trading Number (+966)',token:'demo-token-2',active:true,groups:{
-      'g5':{id:'g5',name:'Middle East Phones',participants:312,enabled:true,messageCount:145},
-      'g6':{id:'g6',name:'Saudi Electronics',participants:198,enabled:true,messageCount:92},
-      'g7':{id:'g7',name:'Personal',participants:6,enabled:false,messageCount:1},
-    }},
-  ];
-  renderChannels();
+  S.alerts=[{model:'iPhone 16 Pro Max',targetPrice:1200,email:'demo@wa-trading.com',active:true}];
   updateAll();
-  toast('📊 Demo loaded — 15 listings, 2 numbers, 7 groups');
+  toast('📊 Demo loaded');
 }
 
-// ── CHANNEL & GROUP MANAGEMENT ──
-let localChannels = JSON.parse(localStorage.getItem('wa_channels')||'[]');
+// ── CHANNEL & GROUP MANAGEMENT (with MongoDB sync) ──
+let localChannels = [];
 
-function saveChannels(){
-  try{localStorage.setItem('wa_channels',JSON.stringify(localChannels));}catch(e){console.warn('Could not save channels:',e);}
+async function initChannels(){
+  try {
+    // First try to load from server (MongoDB)
+    const serverChannels = await api('/api/channels');
+    if (serverChannels && serverChannels.length) {
+      localChannels = serverChannels;
+      localStorage.setItem('wa_channels', JSON.stringify(localChannels));
+      console.log('✅ Loaded channels from MongoDB:', localChannels.length);
+    } else {
+      // Fallback to local storage
+      const saved = localStorage.getItem('wa_channels');
+      if (saved) localChannels = JSON.parse(saved);
+    }
+  } catch(e) {
+    console.log('Could not load from server, using local storage');
+    const saved = localStorage.getItem('wa_channels');
+    if (saved) localChannels = JSON.parse(saved);
+  }
+  renderChannels();
+}
+
+function saveChannelsToLocal(){
+  try{localStorage.setItem('wa_channels',JSON.stringify(localChannels));}catch(e){}
 }
 
 async function addChannel(){
   const label=document.getElementById('chLabel').value.trim();
   const token=document.getElementById('chToken').value.trim();
   if(!label||!token){toast('Enter label and token');return;}
-  // Prevent duplicates — check if token already exists
   const exists=localChannels.find(c=>c.token===token);
   if(exists){toast('⚠️ This token is already added as: '+exists.label);return;}
   const id='ch_'+Date.now();
   const ch={id,label,token,active:true,groups:{}};
   localChannels.push(ch);
-  saveChannels();
-  try{await api('/api/channels','POST',{id,label,token});}catch{}
+  saveChannelsToLocal();
+  try{await api('/api/channels','POST',{id,label,token});}catch(e){console.log('Server sync failed');}
   document.getElementById('chLabel').value='';
   document.getElementById('chToken').value='';
   renderChannels();
@@ -1310,25 +1233,14 @@ async function fetchGroups(chId){
   if(!ch){toast('Channel not found');return;}
   toast('⏳ Fetching groups...');
   try{
-    // Try server-side fetch first
     const groups=await api('/api/channels/'+chId+'/groups');
     ch.groups={};
     groups.forEach(g=>{ch.groups[g.id]={id:g.id,name:g.name,participants:g.participants||0,enabled:true,messageCount:0};});
-    saveChannels();
+    saveChannelsToLocal();
     renderChannels();
     toast('✅ Found '+groups.length+' groups');
-  }catch{
-    // Fallback: fetch directly from Whapi
-    try{
-      const r=await fetch('https://gate.whapi.cloud/groups?count=100',{headers:{'Authorization':'Bearer '+ch.token}});
-      const data=await r.json();
-      const groups=data.groups||[];
-      ch.groups={};
-      groups.forEach(g=>{ch.groups[g.id]={id:g.id,name:g.name||g.subject||g.id,participants:g.participants_count||g.participants||0,enabled:true,messageCount:0};});
-      saveChannels();
-      renderChannels();
-      toast('✅ Found '+groups.length+' groups');
-    }catch(e){toast('⚠️ Could not fetch groups: '+e.message);}
+  } catch(e){
+    toast('⚠️ Could not fetch groups: '+e.message);
   }
 }
 
@@ -1336,8 +1248,8 @@ async function toggleChannel(chId){
   const ch=localChannels.find(c=>c.id===chId);
   if(!ch) return;
   ch.active=!ch.active;
-  saveChannels();
-  try{await api('/api/channels/'+chId+'/toggle','PATCH');}catch{}
+  saveChannelsToLocal();
+  try{await api('/api/channels/'+chId+'/toggle','PATCH');}catch(e){}
   renderChannels();
   toast(ch.active?'✅ Channel enabled':'⏸ Channel disabled');
 }
@@ -1345,40 +1257,29 @@ async function toggleChannel(chId){
 async function deleteChannel(chId){
   if(!confirm('Remove this WhatsApp number?')) return;
   localChannels=localChannels.filter(c=>c.id!==chId);
-  saveChannels();
-  try{await api('/api/channels/'+chId,'DELETE');}catch{}
+  saveChannelsToLocal();
+  try{await api('/api/channels/'+chId,'DELETE');}catch(e){}
   renderChannels();
   toast('🗑 Channel removed');
 }
 
 async function toggleGroup(chId,groupId,enabled){
-  // Find channel and update
   const idx=localChannels.findIndex(c=>c.id===chId);
   if(idx===-1) return;
   if(!localChannels[idx].groups[groupId]) return;
   localChannels[idx].groups[groupId].enabled=enabled;
-  saveChannels();
-  // Update just the counter display without full re-render (prevents checkbox reset)
-  const groups=Object.values(localChannels[idx].groups);
-  const enabledCount=groups.filter(g=>g.enabled!==false).length;
-  // Update counter spans
-  document.querySelectorAll('[data-ch-counter="'+chId+'"]').forEach(el=>{
-    el.textContent=enabledCount+'/'+groups.length+' active';
-  });
-  document.querySelectorAll('[data-ch-label="'+chId+'"]').forEach(el=>{
-    el.textContent=enabledCount+'/'+groups.length+' groups enabled';
-  });
-  try{await api('/api/channels/'+chId+'/groups/'+groupId,'PATCH',{enabled});}catch{}
+  saveChannelsToLocal();
+  try{await api('/api/channels/'+chId+'/groups/'+groupId,'PATCH',{enabled});}catch(e){}
+  renderChannels();
 }
 
 async function toggleAllGroups(chId,enabled){
   const ch=localChannels.find(c=>c.id===chId);
   if(!ch) return;
   Object.keys(ch.groups).forEach(gId=>{ch.groups[gId].enabled=enabled;});
-  saveChannels();
+  saveChannelsToLocal();
   renderChannels();
-  toast(enabled?'✅ All '+Object.keys(ch.groups).length+' groups enabled':'⏸ All groups disabled');
-  try{await api('/api/channels/'+chId+'/groups','PUT',{groups:Object.keys(ch.groups).map(id=>({id,enabled}))});}catch{}
+  toast(enabled?'✅ All groups enabled':'⏸ All groups disabled');
 }
 
 function renderChannels(){
@@ -1409,7 +1310,7 @@ function renderChannels(){
         <div class="ch-icon">${ch.active?'📱':'⏸'}</div>
         <div class="ch-info">
           <div class="ch-label">${esc(ch.label)}</div>
-          <div class="ch-token" data-ch-label="${ch.id}">${groups.length?enabledCount+'/'+groups.length+' groups enabled':'No groups fetched yet'} · ${ch.active?'Active':'Paused'}</div>
+          <div class="ch-token">${groups.length?enabledCount+'/'+groups.length+' groups enabled':'No groups fetched yet'} · ${ch.active?'Active':'Paused'}</div>
         </div>
         <div class="ch-actions">
           <button class="ch-btn primary" onclick="fetchGroups('${ch.id}')">🔄 Fetch Groups</button>
@@ -1417,35 +1318,18 @@ function renderChannels(){
           <button class="ch-btn danger" onclick="deleteChannel('${ch.id}')">✕</button>
         </div>
       </div>
-      <!-- WEBHOOK URL -->
       <div style="padding:8px 14px;border-bottom:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:space-between;gap:8px">
         <span style="font-family:var(--mono);font-size:9px;color:var(--accent);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${webhookUrl}</span>
         <button class="cp-btn" onclick="navigator.clipboard.writeText('${webhookUrl}').then(()=>toast('✅ Copied!'))">COPY</button>
       </div>
-      <!-- GROUPS TOGGLE -->
       ${groups.length?`<div style="padding:8px 14px;border-bottom:1px solid var(--border);display:flex;gap:6px">
         <button class="ch-btn primary" onclick="toggleAllGroups('${ch.id}',true)" style="font-size:8px">Enable All</button>
         <button class="ch-btn muted" onclick="toggleAllGroups('${ch.id}',false)" style="font-size:8px">Disable All</button>
         <span style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-left:auto;align-self:center">${enabledCount}/${groups.length} active</span>
       </div>`:''}
-      <!-- GROUP LIST -->
       <div style="max-height:280px;overflow-y:auto;-webkit-overflow-scrolling:touch">${groupsHtml}</div>
     </div>`;
   }).join('');
-}
-
-// Load saved channels on start — persists across logout/login
-function initChannels(){
-  // Load from localStorage first (instant, no server needed)
-  const saved = localStorage.getItem('wa_channels');
-  if(saved) {
-    try { localChannels = JSON.parse(saved); } catch{}
-  }
-  renderChannels();
-  // Sync to server in background
-  localChannels.forEach(ch=>{
-    api('/api/channels','POST',{id:ch.id,label:ch.label,token:ch.token}).catch(()=>{});
-  });
 }
 
 // ── UTILS ──
