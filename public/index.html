@@ -665,9 +665,24 @@ function demoMode(){
   loadDemo();setupUI();
 }
 
-function enterApp(){
+async function enterApp(){
   document.getElementById('authScreen').style.display='none';
-  setupUI();startLive();loadTeam();
+  setupUI();
+  
+  // IMMEDIATELY LOAD EXISTING LISTINGS
+  try {
+    console.log('📥 Loading existing listings...');
+    const msgs = await api('/api/messages?limit=500');
+    if (msgs && msgs.length) {
+      msgs.reverse().forEach(addListing);
+      if (msgs[0] && msgs[0].timestamp) lastTs = msgs[0].timestamp;
+      updateAll();
+      console.log(`✅ Loaded ${msgs.length} existing listings`);
+    }
+  } catch(e) { console.log('Failed to load listings:', e); }
+  
+  startLive();
+  loadTeam();
   initChannels();
 }
 
@@ -704,18 +719,19 @@ async function api(url,method='GET',body=null){
 function startLive(){
   if(pollInt) clearInterval(pollInt);
   setPill('on','LIVE');
-  poll();pollInt=setInterval(poll,5000);
+  pollInt = setInterval(poll, 5000);
 }
 async function poll(){
   if(S.isDemo) return;
   try{
-    const msgs=await api('/api/messages?since='+lastTs+'&limit=100');
-    if(msgs.length){
-      lastTs=msgs[0].timestamp;
+    const msgs = await api('/api/messages?since=' + lastTs + '&limit=100');
+    if(msgs && msgs.length){
+      const newLastTs = msgs[0].timestamp;
       msgs.reverse().forEach(addListing);
+      lastTs = newLastTs;
       updateAll();
     }
-  }catch(e){}
+  } catch(e){}
 }
 
 // ── ADD LISTING ──
@@ -725,7 +741,12 @@ function addListing(l){
   if(S.listings.length>2000) S.listings.pop();
   const n=l.sender||'?';
   if(!S.traders[n]) S.traders[n]={wts:0,wtb:0,country:l.sellerCountry};
-  if(l.type==='WTS') S.traders[n].wts++; else S.traders[n].wtb++;
+  if(l.type==='WTS') S.traders[n].wts++; 
+else if(l.type==='WTB') S.traders[n].wtb++;
+else {
+  if(!S.traders[n].other) S.traders[n].other = 0;
+  S.traders[n].other++;
+}
   checkWatchlistMatch(l);
   checkLocalAlert(l);
 }
@@ -762,12 +783,14 @@ function renderFeed(){
     const scoreLabel=score?'⭐ '+score+'/10':'';
     const status=l.status||'new';
     const assignee=l.assignedTo?l.assignedTo.split('@')[0]:'';
+    const displayType = l.type || 'MESSAGE';
+    const displayTypeClass = (l.type || 'message').toLowerCase();
     return`<div class="listing">
       ${scoreLabel?`<div class="score-badge ${scoreCls}">${scoreLabel}</div>`:''}
       ${l.isFlagged?`<div class="flag-banner">⚠️ ${esc(l.flagReason||'Suspicious listing')}</div>`:''}
       <div class="l-top">
-        <span class="tag ${l.type.toLowerCase()}">${l.type}</span>
-        <span class="tag ${l.condition==='Brand New'?'new':'used'}">${l.condition==='Brand New'?'NEW':'USED'}</span>
+        <span class="tag ${displayTypeClass}">${displayType}</span>
+        <span class="tag ${l.condition==='Brand New'?'new':'used'}">${l.condition==='Brand New'?'NEW':l.condition==='Used'?'USED':'OTHER'}</span>
         ${l.grade?`<span class="tag grade">Grade ${esc(l.grade)}</span>`:''}
         <span class="l-model">${esc(l.model||'Unknown')}</span>
         ${priceStr?`<span class="l-price">${priceStr}</span>`:''}
@@ -802,7 +825,6 @@ function renderFeed(){
     </div>`;
   }).join('');
 }
-
 // ── PIPELINE ──
 async function setPipeline(id,status){
   const l=S.listings.find(x=>x.id===id);
@@ -987,7 +1009,7 @@ function renderWatchlist(){
   mel.innerHTML=matches.slice(0,20).map(l=>{
     const country=l.sellerCountry||l.listingCountry||'';
     return`<div class="listing">
-      <div class="l-top"><span class="tag ${l.type.toLowerCase()}">${l.type}</span><span class="l-model">${esc(l.model||'?')}</span>${l.price?`<span class="l-price">$${l.price.toLocaleString()}</span>`:''}</div>
+      <div class="l-top"><span class="tag ${(l.type || 'message').toLowerCase()}">${l.type || 'MESSAGE'}</span><span class="l-model">${esc(l.model||'?')}</span>${l.price?`<span class="l-price">$${l.price.toLocaleString()}</span>`:''}</div>
       <div class="l-meta"><span>👤 ${esc(l.sender||'?')}</span>${country?`<span>${FLAGS[country]||'🌍'} ${esc(country)}</span>`:''}</div>
     </div>`;
   }).join('');
