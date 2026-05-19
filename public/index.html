@@ -792,7 +792,7 @@ function renderFeed(){
         <span class="tag ${displayTypeClass}">${displayType}</span>
         <span class="tag ${l.condition==='Brand New'?'new':'used'}">${l.condition==='Brand New'?'NEW':l.condition==='Used'?'USED':'OTHER'}</span>
         ${l.grade?`<span class="tag grade">Grade ${esc(l.grade)}</span>`:''}
-        <span class="l-model">${esc(l.model||'Unknown')}</span>
+        <span class="l-model">${esc(l.model||'')}</span>
         ${priceStr?`<span class="l-price">${priceStr}</span>`:''}
       </div>
       ${specs.length?`<div class="specs">${specs.map(s=>`<span class="sc">${esc(s)}</span>`).join('')}</div>`:''}
@@ -1139,7 +1139,7 @@ function renderExpRows(id,list){
     const priceStr=l.price?(l.currency==='AED'?'AED ':'$')+l.price.toLocaleString():'—';
     return`<div class="exp-row">
       <div class="exp-av">${(l.sender||'?')[0].toUpperCase()}</div>
-      <div class="exp-info"><div class="exp-name">${esc(l.model||'Unknown')}</div><div class="exp-phone">📱 +${esc(l.sender||'?')}</div><div class="exp-detail">${flag} ${esc(country)}${specs?' · '+esc(specs):''}</div></div>
+      <div class="exp-info"><div class="exp-name">${esc(l.model||'')}</div><div class="exp-phone">📱 +${esc(l.sender||'?')}</div><div class="exp-detail">${flag} ${esc(country)}${specs?' · '+esc(specs):''}</div></div>
       <div class="exp-price">${priceStr}</div>
     </div>`;
   }).join('');
