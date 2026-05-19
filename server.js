@@ -359,6 +359,12 @@ async function processWebhook(req, res) {
     console.log(`👤 Sender: ${sender}`);
     console.log(`👥 Group: ${group} (${groupName})`);
     
+    // ⭐ SKIP INDIVIDUAL/PRIVATE MESSAGES ⭐
+    if (!group.includes('@g.us') && !group.includes('g.us')) {
+      console.log(`⏭️ SKIPPING: Individual/private message (not a group). Chat ID: ${group}`);
+      continue;
+    }
+    
     // Track group in channel registry
     trackGroup(channelId, group, groupName);
     
