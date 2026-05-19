@@ -475,7 +475,7 @@ async function classifyMessage(text, sender) {
       method: 'POST',
       headers: { 'Content-Type':'application/json', 'x-api-key':CLAUDE_KEY, 'anthropic-version':'2023-06-01' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514', max_tokens: 400,
+        model: 'claude-haiku-4-5-20251001', max_tokens: 400,
         system: `Electronics trading WhatsApp classifier for Middle East markets. Return ONLY valid JSON:
 {"type":"WTS"|"WTB"|"UNKNOWN","condition":"Brand New"|"Used","model":"brand+model or null","storage":"e.g.256GB or null","ram":"e.g.8GB or null","color":"color or null","qty":number|null,"grade":"A+"|"A"|"B+"|"B"|"C"|null,"price":number|null,"currency":"USD"|"AED"|"EUR"|"GBP"|"SAR"|"KWD"|null,"country":"country from text or null","summary":"max 80 chars"}`,
         messages: [{ role:'user', content:`Phone:${sender}\nMessage:${text}` }],
@@ -497,7 +497,7 @@ async function scoreListing(listing) {
       method: 'POST',
       headers: { 'Content-Type':'application/json', 'x-api-key':CLAUDE_KEY, 'anthropic-version':'2023-06-01' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514', max_tokens: 200,
+        model: 'claude-haiku-4-5-20251001', max_tokens: 200,
         system: `You score electronics trading listings 1-10 and detect fake/suspicious ones. Return ONLY JSON: {"score":number,"reason":"one line","isFlagged":boolean,"flagReason":"reason or null"}`,
         messages: [{ role:'user', content:`Listing: ${listing.type} ${listing.condition} ${listing.model} ${listing.storage||''} ${listing.color||''} ${listing.grade?'Grade '+listing.grade:''} Price:${listing.price?'$'+listing.price:'not stated'} Qty:${listing.qty||1}\nMarket avg for similar: ${avgPrice?'$'+avgPrice:'unknown'}\nMessage: ${listing.raw}\n\nScore 1-10 (10=excellent deal). Flag if price too low to be real, vague specs, or suspicious.` }],
       }),
@@ -619,7 +619,7 @@ async function claudeCall(prompt, system, maxTokens=1000) {
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'Content-Type':'application/json', 'x-api-key':CLAUDE_KEY, 'anthropic-version':'2023-06-01' },
-    body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:maxTokens, system, messages:[{role:'user',content:prompt}] }),
+    body: JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:maxTokens, system, messages:[{role:'user',content:prompt}] }),
   });
   const d = await r.json();
   return d.content?.[0]?.text || 'No response';
