@@ -313,11 +313,6 @@ async function processWebhook(req, res) {
   console.log(`📌 Method: ${req.method}`);
   console.log(`📌 Path: ${req.path}`);
   console.log(`📌 Query params:`, req.query);
-  console.log(`📌 Headers:`, {
-    'content-type': req.headers['content-type'],
-    'x-channel-id': req.headers['x-channel-id'],
-    'user-agent': req.headers['user-agent']
-  });
   
   // Send immediate 200 response (Whapi requires this)
   res.sendStatus(200);
@@ -330,7 +325,6 @@ async function processWebhook(req, res) {
   const messages = req.body.messages || [];
   const entry = req.body.entry || [];
   
-  // Some webhook formats use different structure
   let allMessages = messages;
   if (entry.length > 0 && entry[0].changes) {
     allMessages = entry[0].changes.flatMap(c => c.value?.messages || []);
@@ -338,22 +332,20 @@ async function processWebhook(req, res) {
   
   console.log(`📨 Total messages in webhook: ${allMessages.length}`);
   
-  if (allMessages.length === 0) {
-    console.log(`⚠️ No messages in webhook body. Full body:`, JSON.stringify(req.body).substring(0, 500));
-  }
-  
   for (let idx = 0; idx < allMessages.length; idx++) {
     const msg = allMessages[idx];
     console.log(`\n--- Processing message ${idx + 1}/${allMessages.length} ---`);
     
     const text = msg.text?.body || msg.caption || msg.text || '';
-    console.log(`📝 Raw text: "${text}"`);
+    console.log(`📝 Raw text: "${text.substring(0, 200)}"`);
     
-    if (!text || text.length < 8) {
+    // Skip empty or very short messages
+    if (!text || text.length < 3) {
       console.log(`⏭️ Skipping: text too short or empty`);
       continue;
     }
     
+    // Skip outgoing messages
     if (msg.from_me) {
       console.log(`⏭️ Skipping: message from me (outgoing)`);
       continue;
@@ -366,16 +358,12 @@ async function processWebhook(req, res) {
     
     console.log(`👤 Sender: ${sender}`);
     console.log(`👥 Group: ${group} (${groupName})`);
-    console.log(`⏰ Timestamp: ${ts}`);
     
     // Track group in channel registry
     trackGroup(channelId, group, groupName);
     
     // Check if group is allowed
-    const allowed = isGroupAllowed(channelId, group);
-    console.log(`🔓 Group allowed: ${allowed}`);
-    
-    if (!allowed) {
+    if (!isGroupAllowed(channelId, group)) {
       console.log(`⏭️ Skipping: group disabled for this channel`);
       continue;
     }
@@ -384,58 +372,39 @@ async function processWebhook(req, res) {
     mem.rawMessages.unshift({ text, sender, group, groupName, channelId, ts });
     if (mem.rawMessages.length > 200) mem.rawMessages.pop();
     
-    // Check if it's a trading message
-    const lower = text.toLowerCase();
-   const tradingKeywords = ['wts','wtb','selling','buying','for sale','looking for',
-  'aed','usd','offer','grade','brand new','used','iphone','samsung','ipad',
-  'macbook','pixel','للبيع','مطلوب','بيع','شراء','sale','available','price',
-  'refurb','wholesale','bulk','units','pcs','pieces',
-  // YEH NAYE KEYWORDS ADD KARO:
-  'offer', 'price', 'update', 'stock', 'available', 'deal', 'promo',
-  'special', 'discount', 'wholesale', 'bulk', 'price list'
-];
-    const isTrading = tradingKeywords.some(k => lower.includes(k));
-    
-    console.log(`💼 Is trading message: ${isTrading}`);
-    
-    if (!isTrading) {
-      console.log(`⏭️ Skipping: not a trading message`);
-      continue;
-    }
-    
-    // Classify the message
+    // Try to classify with AI
     console.log(`🤖 Classifying message with AI...`);
-    const classified = await classifyMessage(text, sender);
-    console.log(`📊 Classification result:`, classified);
-    
-    if (!classified || classified.type === 'UNKNOWN') {
-      console.log(`⏭️ Skipping: could not classify as WTS/WTB`);
-      continue;
+    let classified = null;
+    try {
+      classified = await classifyMessage(text, sender);
+      console.log(`📊 Classification result:`, JSON.stringify(classified));
+    } catch(e) {
+      console.log(`⚠️ Classification error:`, e.message);
     }
     
     const sellerCountry = phoneToCountry(sender);
-    console.log(`🌍 Seller country: ${sellerCountry || 'Unknown'}`);
     
+    // Create listing object
     const listing = {
       id: `${ts}-${Math.random().toString(36).slice(2,7)}`,
-      type: classified.type,
-      condition: classified.condition,
-      model: classified.model || null,
-      storage: classified.storage || null,
-      ram: classified.ram || null,
-      color: classified.color || null,
-      qty: classified.qty || null,
-      grade: classified.condition === 'Used' ? (classified.grade || null) : null,
-      price: classified.price || null,
-      currency: classified.currency || 'USD',
-      summary: classified.summary || text.slice(0,80),
+      type: classified?.type || 'MESSAGE',
+      condition: classified?.condition || null,
+      model: classified?.model || null,
+      storage: classified?.storage || null,
+      ram: classified?.ram || null,
+      color: classified?.color || null,
+      qty: classified?.qty || null,
+      grade: classified?.grade || null,
+      price: classified?.price || null,
+      currency: classified?.currency || 'USD',
+      summary: classified?.summary || text.slice(0,80),
       dealScore: null,
       isFlagged: false,
       flagReason: null,
       sender,
       channelId,
       sellerCountry,
-      listingCountry: classified.country || null,
+      listingCountry: classified?.country || null,
       group,
       timestamp: ts,
       raw: text,
@@ -447,29 +416,33 @@ async function processWebhook(req, res) {
     
     console.log(`✅ CREATED LISTING:`);
     console.log(`   ID: ${listing.id}`);
-    console.log(`   Type: ${listing.type}`);
-    console.log(`   Model: ${listing.model}`);
-    console.log(`   Price: ${listing.price} ${listing.currency}`);
-    console.log(`   Condition: ${listing.condition}`);
+    console.log(`   Type: ${listing.type || 'MESSAGE'}`);
+    console.log(`   Model: ${listing.model || 'N/A'}`);
+    console.log(`   Price: ${listing.price || 'N/A'} ${listing.currency}`);
     
-    // AI deal scoring (async)
-    scoreListing(listing).then(scored => {
-      Object.assign(listing, scored);
-      DB.updateListing(listing.id, scored);
-      console.log(`⭐ Listing scored: ${scored.dealScore}/10`);
-    });
-    
+    // Save to database
     await DB.insertListing(listing);
     console.log(`💾 Listing saved to database`);
     
-    // Check price alerts
-    checkAlerts(listing);
+    // Check price alerts (only if price exists)
+    if (listing.price) checkAlerts(listing);
     
     // Update trader stats
-    if (!mem.traders[sender]) mem.traders[sender] = { wts:0, wtb:0, country: sellerCountry };
-    if (listing.type === 'WTS') mem.traders[sender].wts++; else mem.traders[sender].wtb++;
+    if (!mem.traders[sender]) mem.traders[sender] = { wts:0, wtb:0, other:0, country: sellerCountry };
+    if (listing.type === 'WTS') mem.traders[sender].wts++;
+    else if (listing.type === 'WTB') mem.traders[sender].wtb++;
+    else mem.traders[sender].other++;
     
     console.log(`📊 Trader stats updated for ${sender}`);
+    
+    // AI deal scoring (async, don't block)
+    if (listing.model && listing.price) {
+      scoreListing(listing).then(scored => {
+        Object.assign(listing, scored);
+        DB.updateListing(listing.id, scored);
+        console.log(`⭐ Listing scored: ${scored.dealScore}/10`);
+      }).catch(e => console.log(`Score error: ${e.message}`));
+    }
   }
   
   const duration = Date.now() - startTime;
