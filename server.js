@@ -386,10 +386,14 @@ async function processWebhook(req, res) {
     
     // Check if it's a trading message
     const lower = text.toLowerCase();
-    const tradingKeywords = ['wts','wtb','selling','buying','for sale','looking for',
-      'aed','usd','offer','grade','brand new','used','iphone','samsung','ipad',
-      'macbook','pixel','للبيع','مطلوب','بيع','شراء','sale','available','price',
-      'refurb','wholesale','bulk','units','pcs','pieces'];
+   const tradingKeywords = ['wts','wtb','selling','buying','for sale','looking for',
+  'aed','usd','offer','grade','brand new','used','iphone','samsung','ipad',
+  'macbook','pixel','للبيع','مطلوب','بيع','شراء','sale','available','price',
+  'refurb','wholesale','bulk','units','pcs','pieces',
+  // YEH NAYE KEYWORDS ADD KARO:
+  'offer', 'price', 'update', 'stock', 'available', 'deal', 'promo',
+  'special', 'discount', 'wholesale', 'bulk', 'price list'
+];
     const isTrading = tradingKeywords.some(k => lower.includes(k));
     
     console.log(`💼 Is trading message: ${isTrading}`);
