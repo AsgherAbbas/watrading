@@ -19,7 +19,7 @@ const CLAUDE_KEY  = process.env.CLAUDE_API_KEY || '';
 const MONGO_URI   = process.env.MONGO_URI || '';
 const JWT_SECRET  = process.env.JWT_SECRET || 'wa-trading-secret-2024';
 const PORT        = process.env.PORT || 3000;
-const PAUSE_WEBHOOK = false; // Set to true to temporarily stop processing incoming webhook messages.
+const PAUSE_WEBHOOK = ['1', 'true', 'yes', 'on'].includes((process.env.PAUSE_WEBHOOK || '').toString().trim().toLowerCase());
 
 // ── IN-MEMORY FALLBACK (used if no MongoDB) ──
 const mem = {
@@ -316,7 +316,7 @@ async function processWebhook(req, res) {
   console.log(`📌 Query params:`, req.query);
 
   if (PAUSE_WEBHOOK) {
-    console.log('⏸️ Webhook processing is paused. Ignoring incoming message and returning 200 OK.');
+    console.log('⏸️ WEBHOOK PAUSED — ignoring incoming messages and returning 200 OK');
     return res.sendStatus(200);
   }
   
