@@ -14,6 +14,12 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ⛔ FORCE STOP - IGNORE ALL WEBHOOKS
+app.post(/\/webhook.*/, (req, res) => {
+  console.log(`⛔ BLOCKED: ${req.path} at ${new Date().toISOString()}`);
+  return res.sendStatus(200);
+});
+
 // ── ENV ──
 const CLAUDE_KEY  = process.env.CLAUDE_API_KEY || '';
 const MONGO_URI   = process.env.MONGO_URI || '';
